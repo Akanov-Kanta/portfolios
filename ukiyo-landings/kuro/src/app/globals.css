@@ -1,0 +1,270 @@
+@import "tailwindcss";
+
+:root {
+  --ink: #0b1622;
+  --ink-2: #16283a;
+  --crimson: #9e1b1b;
+  --vermilion: #e2401c;
+  --gold: #c9a24a;
+  --rice: #ece6d8;
+  --steel: #5fa8d3;
+  /* flat tonal steps of gold leaf — still flat fills, never gradients */
+  --gold-deep: #a9873a;
+  --gold-pale: #dcc077;
+}
+
+@theme inline {
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-crimson: var(--crimson);
+  --color-vermilion: var(--vermilion);
+  --color-gold: var(--gold);
+  --color-gold-deep: var(--gold-deep);
+  --color-gold-pale: var(--gold-pale);
+  --color-rice: var(--rice);
+  --color-steel: var(--steel);
+  --font-display: var(--font-mincho), "Hiragino Mincho ProN", "Yu Mincho", serif;
+  --font-label: var(--font-condensed), "Arial Narrow", sans-serif;
+  --font-sans: var(--font-body), "Arial Narrow", sans-serif;
+}
+
+html {
+  background: var(--ink);
+  color: var(--rice);
+  scroll-behavior: smooth;
+  overflow-x: clip;
+}
+
+body {
+  background: var(--ink);
+  color: var(--rice);
+  font-family: var(--font-sans);
+  overflow-x: clip;
+  -webkit-font-smoothing: antialiased;
+}
+
+::selection {
+  background: var(--gold);
+  color: var(--ink);
+}
+
+/* ---------- Paper grain over everything ---------- */
+.grain {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  pointer-events: none;
+  opacity: 0.22;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='240' height='240'><filter id='n' x='0' y='0' width='100%25' height='100%25'><feTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 .5  0 0 0 0 .46  0 0 0 0 .4  0 0 0 1.6 -.45'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+}
+
+@layer components {
+.paper {
+  background-color: var(--rice);
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='400' height='400'><filter id='f' x='0' y='0' width='100%25' height='100%25'><feTurbulence type='fractalNoise' baseFrequency='.0125 .1' numOctaves='2' seed='4' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 .55  0 0 0 0 .48  0 0 0 0 .36  0 0 0 .45 -.16'/></filter><rect width='100%' height='100%' filter='url(%23f)'/></svg>");
+  color: var(--ink);
+}
+
+/* ---------- Gold leaf: square kinpaku tiles in flat tonal steps ---------- */
+.gold-leaf {
+  background-color: var(--gold);
+  background-image:
+    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='180' height='180'><g fill='%23DCC077' fill-opacity='.3'><rect x='0' y='0' width='60' height='60'/><rect x='120' y='60' width='60' height='60'/><rect x='60' y='120' width='60' height='60'/></g><g fill='%23A9873A' fill-opacity='.26'><rect x='60' y='0' width='60' height='60'/><rect x='0' y='120' width='60' height='60'/></g><g fill='none' stroke='%230B1622' stroke-opacity='.14' stroke-width='1'><path d='M0 .5H180M0 60.5H180M0 120.5H180M.5 0V180M60.5 0V180M120.5 0V180'/></g></svg>"),
+    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='300' height='300'><filter id='g' x='0' y='0' width='100%25' height='100%25'><feTurbulence type='fractalNoise' baseFrequency='.45' numOctaves='2' seed='9' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 .3  0 0 0 0 .22  0 0 0 0 .08  0 0 0 .6 -.22'/></filter><rect width='100%' height='100%' filter='url(%23g)'/></svg>");
+}
+
+/* ---------- Type helpers ---------- */
+.label {
+  font-family: var(--font-label);
+  text-transform: uppercase;
+  letter-spacing: 0.28em;
+  font-weight: 500;
+  font-size: 0.72rem;
+}
+
+.vertical {
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+}
+
+.vertical-upright {
+  writing-mode: vertical-rl;
+  text-orientation: upright;
+}
+
+/* ---------- Buttons: flat fill + hard offset shadow + blade glint ---------- */
+.btn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  padding: 0.95rem 1.6rem;
+  font-family: var(--font-label);
+  text-transform: uppercase;
+  letter-spacing: 0.26em;
+  font-weight: 600;
+  font-size: 0.78rem;
+  overflow: hidden;
+  isolation: isolate;
+  cursor: pointer;
+  transition:
+    transform 0.14s cubic-bezier(0.2, 0.9, 0.3, 1),
+    box-shadow 0.14s cubic-bezier(0.2, 0.9, 0.3, 1),
+    color 0.14s linear;
+}
+
+.btn::after {
+  content: "";
+  position: absolute;
+  top: -20%;
+  bottom: -20%;
+  left: 0;
+  width: 14%;
+  background: var(--rice);
+  opacity: 0.9;
+  transform: skewX(-24deg) translateX(-200%);
+  z-index: 1;
+  pointer-events: none;
+}
+
+.btn:hover::after,
+.btn:focus-visible::after {
+  animation: glint 0.5s cubic-bezier(0.7, 0, 0.2, 1) forwards;
+}
+
+.btn > * {
+  position: relative;
+  z-index: 2;
+}
+
+.btn-gold {
+  background: var(--gold);
+  color: var(--ink);
+  box-shadow: 6px 6px 0 var(--ink-2);
+}
+
+.btn-gold:hover {
+  transform: translate(-2px, -2px);
+  box-shadow: 8px 8px 0 var(--crimson);
+}
+
+.btn-ghost {
+  color: var(--rice);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--rice) 45%, transparent);
+}
+
+.btn-ghost:hover {
+  box-shadow:
+    inset 0 0 0 1px var(--gold),
+    5px 5px 0 var(--gold);
+  transform: translate(-2px, -2px);
+  color: var(--gold);
+}
+
+.btn-ink {
+  background: var(--ink);
+  color: var(--rice);
+  box-shadow: 6px 6px 0 var(--gold);
+}
+
+.btn-ink:hover {
+  transform: translate(-2px, -2px);
+  box-shadow: 8px 8px 0 var(--vermilion);
+}
+
+.btn:active {
+  transform: translate(3px, 3px);
+  box-shadow: 0 0 0 transparent;
+}
+
+@keyframes glint {
+  to {
+    transform: skewX(-24deg) translateX(900%);
+  }
+}
+
+}
+
+:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 3px;
+}
+
+@layer components {
+/* ---------- Hanko seal ---------- */
+.hanko {
+  background: var(--vermilion);
+  color: var(--rice);
+  display: inline-grid;
+  place-items: center;
+  font-family: var(--font-display);
+  line-height: 1;
+}
+
+}
+
+/* ---------- Age gate visibility (set pre-paint by inline script) ---------- */
+html[data-age="ok"] .age-gate {
+  display: none;
+}
+
+html:not([data-age="ok"]) body {
+  overflow: hidden;
+}
+
+/* ---------- Slash reveal initial state (only when JS + motion are allowed) ---------- */
+html.motion [data-reveal] {
+  clip-path: polygon(0 0, 0 0, -40% 100%, -40% 100%);
+}
+
+html.motion [data-reveal][data-shown] {
+  clip-path: none;
+}
+
+html.motion [data-hero-cut] {
+  clip-path: polygon(0% 0%, 0% 0%, -40% 100%, -40% 100%);
+}
+
+html.motion [data-rise],
+html.motion [data-hero-rise] {
+  opacity: 0;
+}
+
+/* ---------- Falling gold leaf ---------- */
+@keyframes drift {
+  0% {
+    transform: translate3d(0, -12vh, 0) rotate(0deg) scaleX(1);
+  }
+  50% {
+    transform: translate3d(-3vw, 45vh, 0) rotate(260deg) scaleX(0.3);
+  }
+  100% {
+    transform: translate3d(-7vw, 112vh, 0) rotate(540deg) scaleX(1);
+  }
+}
+
+.flake {
+  position: absolute;
+  top: 0;
+  background: var(--gold);
+  animation: drift linear infinite;
+  will-change: transform;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+  .flake {
+    display: none;
+  }
+}

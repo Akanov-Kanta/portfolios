@@ -1,8 +1,9 @@
 # portfolios
 
 Every portfolio site I've built, in one repo, so you can read the code, run it and steal ideas.
-Each folder is a full standalone project with its own `package.json` and README. They're numbered in the
-order I made them.
+Each folder is a full standalone project with its own `package.json` and README. The portfolios are numbered in
+the order I made them; [`ukiyo-landings`](ukiyo-landings) holds five landing pages for made-up brands in the
+same ukiyo-e style as `03-ronin`.
 
 | # | Folder | Idea | Stack | Live |
 |---|---|---|---|---|
@@ -53,6 +54,14 @@ A grayscale "dossier": a swarm of spiral eyes, a jittering title, a pause and a 
 burst), five pinned case-file steps, a hard black/white inversion and a glowing sign-off. Everything on the
 main site is procedural. `edit/` and `hybrid/` are experiments that add video frames.
 
+## Bonus · ukiyo landings
+
+![KENSHI landing: two kendō fighters crossing blades in front of a red sun](previews/landing-kenshi.jpg)
+
+Five landings for fictional brands (tattoo studio, sword dojo, sake brewery, ramen bar, samurai game), built as
+style studies next to `03-ronin`. All art is hand-built SVG. Next.js 16 · Tailwind v4 · GSAP.
+See [`ukiyo-landings/`](ukiyo-landings) for all five with previews and live demos.
+
 ## Run any of them
 
 ```bash
@@ -61,7 +70,8 @@ npm install
 npm run dev
 ```
 
-Node 20+ and npm. Each project's README has its own ports, scripts and file map.
+Same for each landing, e.g. `cd ukiyo-landings/oni`. Node 20+ and npm. Each project's README has its own
+ports, scripts and file map.
 
 ## Footage is not included
 
@@ -71,7 +81,8 @@ to other people, so they're not in this repo. The code and the frame pipeline ar
 drop in your own clip and build the frames; each `public/media/README.md` says how. Without it, the pages
 still load, they just have no footage.
 
-`01-infinite-3d`, `02-ink/shader`, `03-ronin` and the main `04-dossier` site need nothing extra.
+`01-infinite-3d`, `02-ink/shader`, `03-ronin`, the main `04-dossier` site and all `ukiyo-landings` need
+nothing extra.
 
 ## Using this
 

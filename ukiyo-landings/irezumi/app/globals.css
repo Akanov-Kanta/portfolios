@@ -1,0 +1,469 @@
+@import "tailwindcss";
+
+:root {
+  --ink: #0b1622;
+  --ink-2: #16283a;
+  --crimson: #9e1b1b;
+  --vermilion: #e2401c;
+  --gold: #c9a24a;
+  --rice: #ece6d8;
+  --steel: #5fa8d3;
+
+  --cut: 7vw; /* diagonal section cut height */
+}
+
+@theme inline {
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-crimson: var(--crimson);
+  --color-vermilion: var(--vermilion);
+  --color-gold: var(--gold);
+  --color-rice: var(--rice);
+  --color-steel: var(--steel);
+  --font-display: var(--font-shippori), "Hiragino Mincho ProN", "Yu Mincho", serif;
+  --font-narrow: var(--font-barlow), "Arial Narrow", sans-serif;
+  --font-body: var(--font-archivo), "Arial Narrow", sans-serif;
+}
+
+html {
+  background: var(--ink);
+  color: var(--rice);
+  -webkit-text-size-adjust: 100%;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  html {
+    scroll-behavior: smooth;
+  }
+}
+
+body {
+  font-family: var(--font-body);
+  overflow-x: clip;
+  text-rendering: optimizeLegibility;
+}
+
+::selection {
+  background: var(--vermilion);
+  color: var(--ink);
+}
+
+:focus-visible {
+  outline: 3px solid var(--vermilion);
+  outline-offset: 3px;
+}
+
+/* ───────────── paper grain over everything ───────────── */
+.grain {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  pointer-events: none;
+  opacity: 0.22;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='220' height='220'><filter id='n' x='0' y='0' width='100%' height='100%'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.5  0 0 0 0 0.45  0 0 0 0 0.38  0 0 0 1.6 -0.45'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+}
+.fibers {
+  /* long paper fibres, used on light (rice) sections */
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='600' height='600'><filter id='f' x='0' y='0' width='100%' height='100%'><feTurbulence type='fractalNoise' baseFrequency='0.004 0.09' numOctaves='2' seed='7' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.35  0 0 0 0 0.28  0 0 0 0 0.18  0 0 0 1.4 -0.62'/></filter><rect width='100%' height='100%' filter='url(%23f)'/></svg>");
+}
+
+/* ───────────── intro curtain ───────────── */
+.curtain {
+  display: none;
+}
+html.intro .curtain {
+  display: block;
+  /* failsafe: never leave the curtain up if scripts fail */
+  animation: curtain-failsafe 0s linear 4s forwards;
+}
+@keyframes curtain-failsafe {
+  to {
+    visibility: hidden;
+  }
+}
+
+/* ───────────── diagonal section cuts ───────────── */
+.cut {
+  position: relative;
+  margin-top: calc(var(--cut) * -1);
+  padding-top: calc(var(--cut) + 4rem);
+  clip-path: polygon(0 var(--cut), 100% 0, 100% 100%, 0 100%);
+}
+.cut-rev {
+  position: relative;
+  margin-top: calc(var(--cut) * -1);
+  padding-top: calc(var(--cut) + 4rem);
+  clip-path: polygon(0 0, 100% var(--cut), 100% 100%, 0 100%);
+}
+
+/* process track becomes a horizontal strip when GSAP pins it (desktop, motion allowed) */
+.is-hscroll [data-hscroll-track] {
+  display: flex;
+  width: max-content;
+  max-width: none;
+  margin: 2.5rem 0 0;
+  padding-left: max(2rem, calc((100vw - 1500px) / 2 + 2rem));
+  padding-right: 12vw;
+}
+.is-hscroll [data-hscroll-track] > li {
+  width: min(34vw, 480px);
+}
+
+/* ───────────── type helpers ───────────── */
+.label {
+  font-family: var(--font-narrow);
+  text-transform: uppercase;
+  letter-spacing: 0.22em;
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+.vertical {
+  writing-mode: vertical-rl;
+  text-orientation: upright;
+}
+.vertical-side {
+  writing-mode: vertical-rl;
+}
+.display {
+  font-family: var(--font-display);
+  letter-spacing: -0.02em;
+  line-height: 0.92;
+}
+
+/* ───────────── buttons: flat + hard shadow + blade glint ───────────── */
+.btn {
+  --sh: var(--ink);
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.95rem 1.5rem;
+  font-family: var(--font-narrow);
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  font-size: 0.85rem;
+  background: var(--vermilion);
+  color: var(--ink);
+  box-shadow: 6px 6px 0 0 var(--sh);
+  transition: transform 0.12s steps(2), box-shadow 0.12s steps(2);
+}
+.btn:hover {
+  transform: translate(-2px, -2px);
+  box-shadow: 8px 8px 0 0 var(--sh);
+}
+.btn:active {
+  transform: translate(4px, 4px);
+  box-shadow: 2px 2px 0 0 var(--sh);
+}
+.btn--ghost {
+  background: transparent;
+  color: var(--rice);
+  box-shadow: inset 0 0 0 2px var(--rice);
+}
+.btn--ghost:hover {
+  box-shadow: inset 0 0 0 2px var(--rice), 6px 6px 0 0 var(--sh);
+}
+
+.glint {
+  position: relative;
+  overflow: hidden;
+}
+.glint::after {
+  content: "";
+  position: absolute;
+  top: -50%;
+  bottom: -50%;
+  left: -30%;
+  width: 3px;
+  background: var(--rice);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--steel) 70%, transparent);
+  transform: rotate(28deg) translateX(-200px);
+  opacity: 0;
+  pointer-events: none;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .glint:hover::after,
+  .glint:focus-visible::after {
+    animation: glint 0.55s cubic-bezier(0.7, 0, 0.2, 1) forwards;
+  }
+}
+@keyframes glint {
+  0% {
+    opacity: 1;
+    transform: rotate(28deg) translateX(-60px);
+  }
+  100% {
+    opacity: 1;
+    transform: rotate(28deg) translateX(900px);
+  }
+}
+
+/* ───────────── art palette (tattoo flash) ───────────── */
+.art {
+  --line: var(--ink);
+  --paper: var(--rice);
+  --detail: var(--ink);
+  --c1: var(--vermilion);
+  --c2: var(--gold);
+  --c3: var(--steel);
+  --c4: var(--rice);
+  --c5: var(--ink-2);
+  --c6: var(--crimson);
+
+  --dr-body: var(--c3);
+  --dr-belly: var(--c2);
+  --dr-fin: var(--c6);
+  --dr-horn: var(--c4);
+  --dr-claw: var(--c4);
+  --dr-teeth: var(--c4);
+  --dr-eye: var(--c2);
+  --dr-tongue: var(--c1);
+  --dr-line: var(--line);
+  --dr-detail: var(--detail);
+  --dr-rim: transparent;
+}
+.art.duo {
+  --line: var(--ink);
+  --paper: var(--vermilion);
+  --detail: var(--vermilion);
+  --c1: var(--ink);
+  --c2: var(--vermilion);
+  --c3: var(--ink);
+  --c4: var(--vermilion);
+  --c5: var(--ink);
+  --c6: var(--ink);
+}
+.art .k {
+  fill: var(--line);
+}
+.art .p {
+  fill: var(--paper);
+}
+.art .c1 {
+  fill: var(--c1);
+}
+.art .c2 {
+  fill: var(--c2);
+}
+.art .c3 {
+  fill: var(--c3);
+}
+.art .c4 {
+  fill: var(--c4);
+}
+.art .c5 {
+  fill: var(--c5);
+}
+.art .c6 {
+  fill: var(--c6);
+}
+.art .o {
+  stroke: var(--line);
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+.art .sk {
+  fill: none;
+  stroke: var(--line);
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+.art .sd {
+  fill: none;
+  stroke: var(--detail);
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+.art .s4 {
+  fill: none;
+  stroke: var(--c4);
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* hero dragon = same drawing, silhouette palette */
+.hero-art {
+  --dr-body: var(--ink);
+  --dr-belly: var(--ink-2);
+  --dr-fin: var(--ink);
+  --dr-horn: var(--ink);
+  --dr-claw: var(--ink);
+  --dr-teeth: var(--rice);
+  --dr-eye: var(--vermilion);
+  --dr-tongue: var(--vermilion);
+  --dr-line: var(--ink);
+  --dr-detail: var(--ink-2);
+  --dr-rim: var(--steel);
+}
+
+/* ───────────── idle motion ───────────── */
+@media (prefers-reduced-motion: no-preference) {
+  .whisker {
+    animation: sway 5s ease-in-out infinite alternate;
+  }
+  .whisker--b {
+    animation-duration: 6.5s;
+    animation-delay: -2s;
+  }
+  .drift {
+    animation: drift var(--dur, 9s) linear infinite;
+    animation-delay: var(--delay, 0s);
+  }
+  .bob {
+    animation: bob 7s ease-in-out infinite alternate;
+  }
+}
+@keyframes sway {
+  from {
+    transform: rotate(-4deg);
+  }
+  to {
+    transform: rotate(5deg);
+  }
+}
+@keyframes drift {
+  0% {
+    transform: translate3d(0, 0, 0) rotate(var(--r0, 0deg));
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  90% {
+    opacity: 1;
+  }
+  100% {
+    transform: translate3d(var(--dx, -60vw), var(--dy, 30vh), 0) rotate(var(--r1, 540deg));
+    opacity: 0;
+  }
+}
+@keyframes bob {
+  from {
+    transform: translateY(-6px);
+  }
+  to {
+    transform: translateY(8px);
+  }
+}
+
+/* ───────────── slash wipes (CSS-driven) ───────────── */
+@keyframes slash-in {
+  from {
+    clip-path: polygon(-30% 0%, 0% 0%, -30% 100%, -30% 100%);
+  }
+  to {
+    clip-path: polygon(-30% 0%, 130% 0%, 100% 100%, -30% 100%);
+  }
+}
+@keyframes stamp {
+  0% {
+    transform: scale(2.4) rotate(-14deg);
+    opacity: 0;
+  }
+  60% {
+    transform: scale(0.92) rotate(-6deg);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1) rotate(-6deg);
+    opacity: 1;
+  }
+}
+
+/* gallery tile duotone wipe */
+.tile .duo-layer {
+  clip-path: polygon(-40% 0%, -40% 0%, -80% 100%, -80% 100%);
+  transition: clip-path 0.38s cubic-bezier(0.7, 0, 0.2, 1);
+}
+.tile:hover .duo-layer,
+.tile:focus-visible .duo-layer {
+  clip-path: polygon(-40% 0%, 140% 0%, 100% 100%, -80% 100%);
+}
+
+/* lightbox */
+dialog.lightbox {
+  max-width: none;
+  max-height: none;
+  width: 100vw;
+  height: 100dvh;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--rice);
+}
+dialog.lightbox::backdrop {
+  background: color-mix(in srgb, var(--ink) 94%, transparent);
+}
+@media (prefers-reduced-motion: no-preference) {
+  dialog.lightbox[open] .lb-panel {
+    animation: slash-in 0.42s cubic-bezier(0.7, 0, 0.2, 1) both;
+  }
+  .stamp-in {
+    animation: stamp 0.5s cubic-bezier(0.2, 0.9, 0.2, 1) 0.25s both;
+  }
+  .slash-in {
+    animation: slash-in 0.5s cubic-bezier(0.7, 0, 0.2, 1) both;
+  }
+}
+
+/* accordion */
+.acc-body {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.28s cubic-bezier(0.7, 0, 0.2, 1);
+}
+.acc-body[data-open="true"] {
+  grid-template-rows: 1fr;
+}
+.acc-body > div {
+  overflow: hidden;
+}
+
+/* form controls */
+.field {
+  width: 100%;
+  background: transparent;
+  border: 0;
+  border-bottom: 2px solid var(--ink);
+  padding: 0.6rem 0 0.5rem;
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 1.05rem;
+  border-radius: 0;
+  outline: none;
+}
+.field:focus {
+  border-bottom-color: var(--vermilion);
+  box-shadow: 0 2px 0 0 var(--vermilion);
+}
+.field[aria-invalid="true"] {
+  border-bottom-color: var(--crimson);
+  border-bottom-style: dashed;
+}
+.field::placeholder {
+  color: color-mix(in srgb, var(--ink) 45%, transparent);
+}
+select.field {
+  appearance: none;
+  cursor: pointer;
+  background-image: linear-gradient(45deg, transparent 50%, var(--ink) 50%), linear-gradient(135deg, var(--ink) 50%, transparent 50%);
+  background-position: calc(100% - 14px) 55%, calc(100% - 8px) 55%;
+  background-size: 6px 6px, 6px 6px;
+  background-repeat: no-repeat;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+  .drift {
+    display: none;
+  }
+}
