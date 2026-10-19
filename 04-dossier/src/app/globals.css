@@ -1,0 +1,391 @@
+@import "tailwindcss";
+@import "lenis/dist/lenis.css";
+@import "../styles/tokens.css";
+
+@theme inline {
+  --color-ink-0: var(--ink-0);
+  --color-ink-1: var(--ink-1);
+  --color-ink-2: var(--ink-2);
+  --color-ink-3: var(--ink-3);
+  --color-mid: var(--mid);
+  --color-paper-1: var(--paper-1);
+  --color-paper-0: var(--paper-0);
+  --font-sans: var(--font-ui);
+}
+
+html {
+  background: var(--ink-0);
+  color-scheme: dark;
+}
+
+body {
+  background: var(--ink-0);
+  color: var(--paper-0);
+  font-family: var(--font-ui);
+  overflow-x: clip;
+  -webkit-font-smoothing: antialiased;
+}
+
+::selection {
+  background: var(--paper-0);
+  color: var(--ink-0);
+}
+
+:focus-visible {
+  outline: 1px solid var(--paper-0);
+  outline-offset: 3px;
+}
+
+/* Motion-only initial states: hidden until JS arms them, so nothing flashes before its entrance.
+   Reduced motion keeps everything visible and static. */
+@media (prefers-reduced-motion: no-preference) {
+  /* typed captions need no guard: --p starts at 0, so every char is already at opacity 0 */
+  .intro-eye,
+  .intro-hint,
+  .title-char {
+    opacity: 0;
+  }
+  /* INTRO → TITLE overlap: the title section starts exactly where the intro's pin ends (Intro pins for
+     its own height), so the intro's defocus hands straight over to the title with no empty screen. */
+  .title-overlap {
+    margin-top: -100svh;
+  }
+}
+
+/* Film grain (Grain.tsx): an oversized layer tiled with a JS-generated noise tile (--noise), jumped to 8
+   offsets per cycle with steps(1): ~10 fps, compositor-only, no per-frame JS. Overlay blend keeps #000
+   black (as measured in the edit) and puts the texture on mid-tones. */
+.fx-grain {
+  position: fixed;
+  inset: -50%;
+  pointer-events: none;
+  background-image: var(--noise);
+  background-repeat: repeat;
+  opacity: var(--grain-opacity);
+  mix-blend-mode: var(--grain-blend);
+}
+@keyframes fx-grain {
+  0% { transform: translate3d(0, 0, 0); }
+  12.5% { transform: translate3d(-7%, 4%, 0); }
+  25% { transform: translate3d(5%, -9%, 0); }
+  37.5% { transform: translate3d(-11%, -2%, 0); }
+  50% { transform: translate3d(9%, 7%, 0); }
+  62.5% { transform: translate3d(-3%, 10%, 0); }
+  75% { transform: translate3d(12%, -5%, 0); }
+  87.5% { transform: translate3d(-8%, -10%, 0); }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .fx-grain {
+    animation: fx-grain 0.8s steps(1) infinite;
+  }
+}
+
+/* Sound toggle (SoundToggle.tsx): vertical, right edge, centred; reads bottom to top. */
+.sound-toggle {
+  top: 50%;
+  right: calc(var(--gutter) * 0.35);
+  padding: 10px 6px;
+  writing-mode: vertical-rl;
+  transform: translateY(-50%) rotate(180deg);
+  font-size: min(var(--caption-size), 14px);
+  letter-spacing: 0.12em;
+  /* readable on black and on the white burst alike: inverts whatever is under it */
+  mix-blend-mode: difference;
+  color: var(--paper-0);
+  text-shadow: none;
+}
+@media (max-width: 767px) {
+  .sound-toggle {
+    top: 62%;
+    right: 2px;
+  }
+}
+
+/* Giant eye in DROP/DOSSIER (Builder's .ch34-giant): lines only, so the difference blend gives white
+   pencil lines on black and dark lines on the burst (t_05.50 / t_10.00) instead of a pale almond, and
+   softened (the edit's giant eye is never crisp). Cleaner fix for the builder: <Eye variant="ghost" />. */
+.ch34-giant {
+  --giant-o: 0.85;
+}
+.ch34-giant .eye-fill {
+  display: none;
+}
+.ch34-giant > svg {
+  filter: blur(0.7px);
+}
+
+/* The irises breathe a little (glow intensity ±10%). */
+@keyframes iris-breathe {
+  from {
+    opacity: 0.86;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .eye-iris {
+    animation: iris-breathe 2.4s ease-in-out infinite alternate;
+  }
+}
+
+/* ch3-4 — DROP + DOSSIER layout (Builder). Zones/slots measured from frames t_05.50 / t_06.50. */
+.ch34-burst {
+  --bw: max(100vw, 160svh);
+  position: absolute;
+  bottom: 0;
+  left: calc(62% - var(--bw) / 2);
+  width: var(--bw);
+  aspect-ratio: 1.6;
+  transform-origin: 50% 100%;
+}
+.ch34-giant {
+  position: absolute;
+  left: calc(68% - 18vmax);
+  top: calc(48% - 10.5vmax);
+  width: 36vmax;
+  mix-blend-mode: difference; /* white lines on black, dark rings on the white burst */
+}
+.ch34-giant > * {
+  opacity: var(--giant-o, 0.4); /* on the child: the wrapper's opacity belongs to the zoom-in */
+}
+@media (max-width: 767px) {
+  .ch34-burst {
+    --bw: max(100vw, 110svh);
+    left: calc(50% - var(--bw) / 2);
+  }
+  .ch34-giant {
+    left: calc(50% - 15vmax);
+    top: 47%;
+    width: 30vmax;
+  }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .ch34-pre {
+    visibility: hidden;
+  }
+  .ch34-overlap {
+    margin-top: -100svh;
+  }
+  .strip-zone-tr {
+    position: absolute;
+    left: 37.5%;
+    top: 4%;
+    width: 58.5%;
+    height: 28%;
+  }
+  .strip-zone-l {
+    position: absolute;
+    left: 2.3%;
+    top: 28.5%;
+    width: 59%;
+    height: 17%;
+  }
+  .cap-slot-tl {
+    position: absolute;
+    left: max(var(--gutter), 1.1%);
+    top: 5%;
+    max-width: 60%;
+  }
+  .cap-slot-br {
+    position: absolute;
+    left: 50.8%;
+    top: 79%;
+    max-width: 46%;
+  }
+  @media (max-width: 767px) {
+    .strip-zone-tr {
+      left: 0;
+      top: 21%;
+      width: 100%;
+      height: 22%;
+    }
+    .strip-zone-l {
+      left: 0;
+      top: 26%;
+      width: 100%;
+      height: 22%;
+    }
+    .cap-slot-tl,
+    .cap-slot-br {
+      left: var(--gutter);
+      right: var(--gutter);
+      max-width: none;
+    }
+    .cap-slot-tl {
+      top: 6%;
+    }
+    .cap-slot-br {
+      top: auto;
+      bottom: 9%;
+    }
+  }
+}
+.ch34-meta {
+  position: absolute;
+  left: var(--gutter);
+  bottom: calc(var(--gutter) * 1.2);
+}
+@media (max-width: 767px) {
+  .ch34-meta {
+    display: none;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  #drop .cap-slot-br {
+    position: absolute;
+    left: 50.8%;
+    bottom: 9%;
+    max-width: 46%;
+  }
+  @media (max-width: 767px) {
+    #drop .cap-slot-br {
+      left: var(--gutter);
+      right: var(--gutter);
+      max-width: none;
+    }
+  }
+  .ch34-strip {
+    position: relative;
+    width: 100%;
+    height: clamp(160px, 28vw, 300px);
+  }
+}
+/* end ch3-4 */
+
+/* ch5-6 — INVERT + OUTRO layout (Builder). Frames d_7.60 / d_8.60 / t_10.00 / f4_046. */
+.ch56-burst-c,
+.ch56-burst-l {
+  --bw: max(100vw, 160svh);
+  position: absolute;
+  bottom: 0;
+  width: var(--bw);
+  aspect-ratio: 1.6;
+  transform-origin: 50% 100%;
+}
+.ch56-burst-c {
+  left: calc(50% - var(--bw) / 2);
+  bottom: -6%;
+  --bw: max(115vw, 180svh);
+}
+.ch56-burst-l {
+  left: calc(15% - var(--bw) / 2);
+  --bw: max(86vw, 136svh);
+}
+.ch56-window {
+  mask-size: 100% 100%;
+  mask-repeat: no-repeat;
+  -webkit-mask-size: 100% 100%;
+  -webkit-mask-repeat: no-repeat;
+  mix-blend-mode: screen; /* the photo shows as a dim figure inside the black burst */
+  opacity: 0.5;
+}
+.ch56-giant {
+  position: absolute;
+  left: calc(44% - 22vmax);
+  top: calc(52% - 13vmax);
+  width: 44vmax;
+  mix-blend-mode: difference; /* dark rings on paper, light rings on the black burst */
+}
+.ch56-word {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-family: var(--font-ui);
+  font-weight: 400;
+  font-size: min(15vh, 14vw, 160px);
+  letter-spacing: 0.04em;
+  line-height: 1;
+  color: #3a3a3a;
+  pointer-events: none;
+}
+.ch56-word > span {
+  grid-area: 1 / 1;
+  position: relative;
+  opacity: 0.85;
+  filter: blur(0.6px);
+  margin-top: 4vh;
+}
+/* skewed quote ticks (Quicksand has no ˋ ˊ): short bars at cap height */
+.ch56-word > span::before,
+.ch56-word > span::after {
+  content: "";
+  position: absolute;
+  top: 0.12em;
+  width: 0.3em;
+  height: 0.07em;
+  background: currentColor;
+}
+.ch56-word > span::before {
+  left: -0.42em;
+  transform: rotate(18deg);
+}
+.ch56-word > span::after {
+  right: -0.4em;
+  transform: rotate(-18deg);
+}
+.ch56-handle {
+  font-size: clamp(18px, 2.4vw, 34px);
+  letter-spacing: 0.06em;
+  text-align: center;
+}
+.ch56-link {
+  opacity: 0.7;
+  transition: opacity 150ms;
+}
+.ch56-link:hover,
+.ch56-link:focus-visible {
+  opacity: 1;
+}
+@media (max-width: 767px) {
+  .ch56-burst-c {
+    --bw: max(100vw, 120svh);
+  }
+  .ch56-burst-l {
+    --bw: max(100vw, 110svh);
+    left: calc(50% - var(--bw) / 2);
+  }
+  .ch56-giant {
+    display: none;
+  }
+}
+@media (max-width: 767px) and (prefers-reduced-motion: no-preference) {
+  /* phones: keep the dark bottom caption on paper, above a lower burst */
+  #invert .cap-slot-br {
+    top: 51%;
+    bottom: auto;
+  }
+  #invert .ch56-burst-l {
+    --bw: max(100vw, 72svh);
+  }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .ch56-overlap {
+    margin-top: -100svh;
+  }
+  .ch56-word > span:not(:first-child) {
+    visibility: hidden;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ch56-word {
+    position: relative;
+    inset: auto;
+    display: block;
+    padding-top: 30svh;
+    text-align: center;
+  }
+  .ch56-word > span {
+    display: block;
+    width: fit-content;
+    margin: 0 auto 0.4em;
+  }
+}
+@media (min-width: 768px) and (prefers-reduced-motion: no-preference) {
+  /* t_10.00: the bottom-right caption starts on the paper, clear of the black burst edge */
+  #invert .cap-slot-br {
+    left: 54%;
+  }
+}
+/* end ch5-6 */

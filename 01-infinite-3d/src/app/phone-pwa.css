@@ -1,0 +1,152 @@
+/* phone-pwa.css: phone-only styles owned by Lane A. Every rule sits inside one of the three gates, copied verbatim from src/components/world/phone.ts (PHONE_MQ / PHONE_LAND_MQ / PHONE_APP_MQ); top-level @keyframes are named ph-*. Enforced by phone.test.ts. Plain CSS only (no Tailwind directives). */
+
+/* ---- Install offer (pwa/InstallHint.tsx) and [ Share ] (pwa/ShareButton.tsx) ----
+   The // mono module language: mono 12-13 px, '[ ]' on the interactive thing, surface pill (no blur),
+   48 px targets, the one cyan focus ring, :active press. Rendered only on phones (usePhone), so these
+   rules never meet a desktop; the gate keeps phone.test.ts honest. */
+@media (pointer: coarse) and (max-width: 767px), (pointer: coarse) and (max-height: 500px) {
+  [data-install-hint] {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    font-family: var(--font-mono), ui-monospace, monospace;
+  }
+  /* iOS: the steps on one line, the compact-bar note beside Not now */
+  [data-install-hint][data-kind="ios"] {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    column-gap: 12px;
+    row-gap: 0;
+  }
+  /* 12 px (the floor) so the steps fit one line from 393 px wide up */
+  [data-pwa-steps] {
+    grid-column: 1 / -1;
+    margin: 0;
+    font-size: 12px;
+    line-height: 1.45;
+    letter-spacing: 0;
+    color: var(--ink);
+    text-wrap: pretty;
+    text-shadow: 0 1px 14px rgba(10, 11, 16, 0.9);
+  }
+  [data-pwa-steps] svg {
+    display: inline-block;
+    width: 14px;
+    height: 14px;
+    margin: 0 0 0 4px;
+    vertical-align: -2px;
+  }
+  /* one line beside Not now from 360 px wide; narrower, two even lines (never an orphaned word) */
+  [data-pwa-note] {
+    margin: 0;
+    font-size: 12px;
+    line-height: 1.4;
+    color: var(--muted);
+    text-wrap: balance;
+    text-shadow: 0 1px 14px rgba(10, 11, 16, 0.9);
+  }
+  /* after Install / Not now: a status line where the row was (same height, so nothing below moves). It
+     takes the focus programmatically (never a ring: it is text, not a control) */
+  [data-install-note] {
+    display: flex;
+    align-items: center;
+    min-height: 48px;
+    margin: 0;
+    font-family: var(--font-mono), ui-monospace, monospace;
+    font-size: 12px;
+    line-height: 1.4;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+    text-shadow: 0 1px 14px rgba(10, 11, 16, 0.9);
+  }
+  [data-install-note]:focus {
+    outline: none;
+  }
+
+  [data-pwa-pill],
+  [data-pwa-quiet] {
+    font-family: var(--font-mono), ui-monospace, monospace;
+    font-size: 12px;
+    line-height: 1;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    white-space: nowrap;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-touch-callout: none;
+  }
+  [data-pwa-pill] {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    min-height: 48px;
+    padding: 0 20px;
+    border-radius: 999px;
+    color: var(--ink);
+    background: var(--surface);
+    box-shadow: var(--surface-line), var(--surface-shadow);
+    transition: transform var(--dur-press) var(--ease-hard);
+  }
+  [data-pwa-pill]:active {
+    transform: scale(0.97);
+  }
+  [data-pwa-pill] svg {
+    width: 14px;
+    height: 14px;
+    flex: none;
+  }
+  [data-pwa-quiet] {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 48px;
+    min-height: 48px;
+    padding: 0 12px;
+    border-radius: 12px;
+    color: var(--muted);
+    transition: opacity 80ms var(--ease-hard);
+  }
+  [data-pwa-quiet]:active {
+    opacity: 0.7;
+  }
+  /* the global ring, kept on the element's own shape (globals' :focus-visible would square the pill) */
+  [data-pwa-pill]:focus-visible {
+    outline: 1.5px solid var(--screen);
+    outline-offset: 3px;
+    border-radius: 999px;
+  }
+  [data-pwa-quiet]:focus-visible {
+    outline: 1.5px solid var(--screen);
+    outline-offset: 0;
+    border-radius: 12px;
+  }
+
+  /* contact placement only where the station has room for it; short screens keep it in the Index sheet */
+  @media (max-height: 699px) {
+    [data-install-hint="contact"][data-kind],
+    [data-install-note="contact"] {
+      display: none;
+    }
+  }
+
+  /* it can appear late (Chrome hands out the prompt after engagement): fade in, never under reduced motion */
+  @media (prefers-reduced-motion: no-preference) {
+    [data-install-hint] {
+      animation: ph-hint-in 320ms var(--ease-soft) both;
+    }
+  }
+}
+
+@keyframes ph-hint-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}

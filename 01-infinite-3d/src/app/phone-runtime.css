@@ -1,0 +1,70 @@
+/* phone-runtime.css: phone-only styles owned by Lane D. Every rule sits inside one of the three gates, copied verbatim from src/components/world/phone.ts (PHONE_MQ / PHONE_LAND_MQ / PHONE_APP_MQ); top-level @keyframes are named ph-*. Enforced by phone.test.ts. Plain CSS only (no Tailwind directives). */
+
+@media (pointer: coarse) and (max-width: 767px), (pointer: coarse) and (max-height: 500px) {
+  /* the film grain is a full-screen layer the compositor blends every scrolling frame */
+  .grain {
+    display: none;
+  }
+
+  /* no pull-to-refresh and no rubber band: the lap wraps at the bottom instead */
+  html,
+  body {
+    overscroll-behavior-y: none;
+    /* no scroll anchoring: WebKit's anchors on the scroll-driven caption transforms, so a still page
+       drifted on by itself (a release at local 0.3 slid to 0.68 and settled forward: P12). The settle,
+       jumps, the wrap and Back restore all need the scroll to stay where it was put. */
+    overflow-anchor: none;
+  }
+
+  /* iOS swipe-back already animated the page (restore.ts sets data-uavt): skip ours */
+  html[data-uavt]::view-transition-group(*),
+  html[data-uavt]::view-transition-old(*),
+  html[data-uavt]::view-transition-new(*),
+  html[data-uavt]::view-transition-image-pair(*) {
+    animation: none !important;
+  }
+
+  /* GlowPoster (world/fallback/GlowPoster.tsx): the room's light where the portrait room renders,
+     measured from the rendered hero (cyan monitors, warm lamp / doorway, lit shelf, rug warmth).
+     It rests on the hero and fades out over the first 60svh of scroll. */
+  [data-glow-poster] {
+    background:
+      radial-gradient(34% 10% at 64% 44%, rgba(108, 242, 255, 0.18), rgba(108, 242, 255, 0)),
+      radial-gradient(22% 14% at 62% 36%, rgba(255, 184, 107, 0.16), rgba(255, 184, 107, 0)),
+      radial-gradient(24% 8% at 30% 32%, rgba(255, 184, 107, 0.1), rgba(255, 184, 107, 0)),
+      radial-gradient(70% 20% at 45% 66%, rgba(255, 160, 120, 0.1), rgba(255, 160, 120, 0));
+  }
+  @supports (animation-timeline: scroll()) {
+    [data-glow-poster] {
+      animation: ph-poster linear both;
+      animation-timeline: scroll(root);
+      animation-range: 0 60svh;
+    }
+  }
+  @supports not (animation-timeline: scroll()) {
+    [data-glow-poster] {
+      display: none;
+    }
+  }
+}
+
+/* landscape: the room renders wide, left of centre-right, with the doorway glow on the left */
+@media (pointer: coarse) and (max-height: 500px) and (orientation: landscape) {
+  [data-glow-poster] {
+    background:
+      radial-gradient(16% 14% at 55% 40%, rgba(108, 242, 255, 0.16), rgba(108, 242, 255, 0)),
+      radial-gradient(10% 20% at 55% 24%, rgba(255, 184, 107, 0.14), rgba(255, 184, 107, 0)),
+      radial-gradient(8% 30% at 27% 44%, rgba(255, 184, 107, 0.1), rgba(255, 184, 107, 0)),
+      radial-gradient(12% 10% at 43% 21%, rgba(255, 184, 107, 0.08), rgba(255, 184, 107, 0)),
+      radial-gradient(34% 22% at 46% 82%, rgba(255, 160, 120, 0.1), rgba(255, 160, 120, 0));
+  }
+}
+
+@keyframes ph-poster {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}

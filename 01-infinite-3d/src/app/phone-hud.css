@@ -1,0 +1,758 @@
+/* phone-hud.css: phone-only styles owned by Lane B. Every rule sits inside one of the three gates, copied verbatim from src/components/world/phone.ts (PHONE_MQ / PHONE_LAND_MQ / PHONE_APP_MQ); top-level @keyframes are named ph-*. Enforced by phone.test.ts. Plain CSS only (no Tailwind directives). */
+
+/* Phone shell: the Dock (bottom bar) / rail (landscape), the Index sheet, the jump veil, the first-run
+   cue, the monogram's hit area. Surfaces use the phone tokens (globals.css); no backdrop-filter, and
+   motion is transform + opacity only. Components: src/components/phone/. */
+
+@media (pointer: coarse) and (max-width: 767px), (pointer: coarse) and (max-height: 500px) {
+  /* ---- chrome: no tap flash, no callout, no double-tap zoom delay; content text stays selectable ---- */
+  .ph-tab,
+  .ph-menu,
+  .ph-close,
+  .ph-st,
+  .ph-row,
+  [data-hud] .monogram {
+    -webkit-tap-highlight-color: transparent;
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    user-select: none;
+    touch-action: manipulation;
+  }
+
+  /* ---- monogram: the only thing in the top zone; 44 px hit area, the mark stays where it was ---- */
+  [data-hud] > header {
+    top: 10px;
+    left: 10px;
+  }
+  /* text scrolling through the top zone (a project page, About on short screens) passes under a soft void
+     halo instead of colliding with [NA]; over the dark top of every resting station it is invisible. It
+     starts at 4 px: nothing fixed touches the top band Safari 26 samples for its bar tint. */
+  [data-hud] > header::before {
+    content: "";
+    position: absolute;
+    inset: -6px -16px -10px -6px;
+    z-index: -1;
+    border-radius: 999px;
+    background: radial-gradient(closest-side, rgba(10, 11, 16, 0.85) 55%, rgba(10, 11, 16, 0));
+    pointer-events: none;
+  }
+  [data-hud] .monogram {
+    min-width: 44px;
+    min-height: 44px;
+    padding-inline: 10px;
+  }
+  /* hover is neutralised on touch (a tap would leave the handle open) */
+  .monogram:hover .monogram-word,
+  .monogram:focus-visible .monogram-word {
+    max-width: 0;
+    opacity: 0;
+  }
+
+  /* ---- Dock: a floating bar at bottom centre ---- */
+  .ph-dock {
+    position: fixed;
+    z-index: 1;
+    left: 0;
+    right: 0;
+    bottom: var(--dock-gap);
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    width: min(calc(100vw - 32px), 400px);
+    height: var(--dock-h);
+    margin-inline: auto;
+    padding: 4px;
+    border-radius: 999px;
+    background: var(--surface);
+    box-shadow: var(--surface-line), var(--surface-shadow);
+    color: var(--ink);
+    pointer-events: auto;
+    /* rise after hydration (fill backwards only: afterwards the recede owns the box) */
+    animation: ph-dock-in var(--dur-dock-in) var(--spring) backwards;
+    /* receded: this far off its edge (bar: below the gap), faded out. dock-motion.ts eases transform + opacity
+       there and back on its tick (DUR.dockOut on --ease-hard, DUR.dockIn on --spring), not a CSS transition: a
+       time-based animation running while the page scrolls costs a second style recalc per frame (P6) */
+    --recede-x: 0px;
+    --recede-y: calc(100% + var(--dock-gap) + 8px);
+  }
+  /* the same reason while the page moves under a finger (html[data-moving], dock-motion.ts): no time-based CSS
+     animation runs then (a paused one still needs a timing update every frame). A zero duration finishes each in
+     place: the active pill shows at once, the WORK label lifts at once, the Email shimmer holds past the pill's
+     edge. At rest they take up their time again (one already past its end stays finished). Jumps and other
+     scrolls we start ourselves don't count as moving: a tab's pill still springs. */
+  html[data-moving] :is(.ph-tab-glow, .btn-shimmer) {
+    animation-duration: 0s;
+  }
+  html[data-moving] :is(.ph-tab-num, .ph-tab-label) {
+    transition: none;
+  }
+
+  .ph-tabs {
+    display: flex;
+    flex: 1 1 auto;
+    gap: 2px;
+    min-width: 0;
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .ph-tab-item {
+    display: flex;
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+  .ph-tab {
+    position: relative;
+    display: flex;
+    flex: 1 1 auto;
+    align-items: center;
+    justify-content: center;
+    min-width: 48px;
+    min-height: 48px;
+    padding-inline: 8px;
+    border-radius: 999px;
+    color: var(--ink);
+    font-family: var(--font-mono), ui-monospace, monospace;
+    font-size: 12px;
+    line-height: 1.4;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+    transition: opacity 80ms linear;
+  }
+  .ph-tab > span {
+    position: relative;
+  }
+  .ph-tab[aria-current] {
+    color: var(--void);
+  }
+  .ph-tab:active,
+  .ph-menu:active,
+  .ph-close:active {
+    opacity: 0.7;
+  }
+  /* the active pill: globals .nav-pill-glow (ink fill + the nav-glow-in spring), sized to the tab */
+  .ph-tab > .ph-tab-glow {
+    position: absolute;
+    inset: 0;
+    border-radius: 999px;
+  }
+  .ph-tab-num {
+    display: none;
+  }
+  .ph-tab-num,
+  .ph-tab-label {
+    transition: translate 200ms var(--ease-soft);
+  }
+
+  /* the current project, under the active WORK tab */
+  .ph-tab > .ph-dots {
+    position: absolute;
+    left: 50%;
+    bottom: 7px;
+    display: flex;
+    gap: 4px;
+    translate: -50% 0;
+    opacity: 0;
+  }
+  .ph-tab[aria-current] > .ph-dots {
+    opacity: 1;
+  }
+  .ph-tab[aria-current]:has(.ph-dots) > :is(.ph-tab-label, .ph-tab-num) {
+    translate: 0 -4px;
+  }
+  .ph-dot {
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    box-shadow: inset 0 0 0 1px currentColor;
+    opacity: 0.5;
+  }
+  .ph-dot[data-on] {
+    background: currentColor;
+    opacity: 1;
+  }
+
+  .ph-divider {
+    flex: none;
+    width: 1px;
+    height: 24px;
+    background: var(--line);
+  }
+
+  .ph-menu {
+    position: relative;
+    display: grid;
+    flex: none;
+    place-items: center;
+    width: 48px;
+    height: 48px;
+    border-radius: 999px;
+    color: var(--ink);
+    transition: opacity 80ms linear;
+  }
+  .ph-offline-dot {
+    position: absolute;
+    top: 11px;
+    right: 9px;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--screen);
+    box-shadow: 0 0 0 2px var(--void);
+  }
+
+  /* lap hairline along the top rim (straight part between the end caps): scaleX = frame.t */
+  .ph-lap {
+    position: absolute;
+    top: 0;
+    left: 28px;
+    right: 28px;
+    height: 2px;
+    overflow: hidden;
+    border-radius: 1px;
+    background: rgba(232, 233, 240, 0.08);
+    pointer-events: none;
+  }
+  .ph-lap-fill {
+    position: absolute;
+    inset: 0;
+    background: rgba(108, 242, 255, 0.6);
+    transform: scaleX(0);
+    transform-origin: left center;
+  }
+  /* the only loading signal: a 24 px highlight running along the hairline while the world mounts */
+  .ph-shimmer {
+    position: absolute;
+    inset: 0;
+    animation: ph-shimmer 1.2s linear infinite;
+  }
+  .ph-shimmer::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    width: 24px;
+    background: linear-gradient(90deg, transparent, var(--screen), transparent);
+  }
+
+  /* fallback edge (Dock.tsx IOS_BROWSER_EDGE = 'top'): right of the monogram, under the status bar */
+  .ph-dock[data-edge="top"] {
+    top: max(12px, calc(env(safe-area-inset-top, 0px) + 6px));
+    bottom: auto;
+    left: auto;
+    right: 12px;
+    width: min(calc(100vw - 88px), 400px);
+    animation-name: ph-dock-in-top;
+    --recede-y: calc(-100% - 24px);
+  }
+  .ph-dock[data-edge="top"] .ph-lap {
+    top: auto;
+    bottom: 0;
+  }
+  [data-hud]:has(.ph-dock[data-edge="top"]) .ph-hint {
+    bottom: calc(var(--dock-gap) + 10px);
+  }
+
+  /* narrow phones: inactive tabs keep only their number (the label stays for screen readers) */
+  @media (max-width: 359px) {
+    .ph-tab:not([aria-current]) > .ph-tab-num {
+      display: block;
+    }
+    .ph-tab:not([aria-current]) > .ph-tab-label {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      margin: -1px;
+      padding: 0;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+    }
+  }
+
+  /* ---- jump veil: under the Dock and the monogram (z -1 inside the HUD layer), over the world ---- */
+  .ph-veil {
+    position: fixed;
+    z-index: -1;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 100lvh;
+    background: var(--void);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity var(--dur-jump-out) var(--ease-soft);
+  }
+  .ph-veil[data-on] {
+    opacity: 1;
+    transition: opacity var(--dur-jump-in) var(--ease-hard);
+  }
+
+  /* ---- first-run cue: 10 px above the Dock ---- */
+  .ph-hint {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: calc(var(--dock-h) + var(--dock-gap) + 10px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    margin: 0;
+    color: var(--ink);
+    pointer-events: none;
+    animation: ph-fade-in 600ms var(--ease-soft) 300ms backwards;
+    transition:
+      opacity 240ms var(--ease-hard),
+      translate 240ms var(--ease-hard);
+  }
+  .ph-hint[data-out] {
+    opacity: 0;
+    translate: 0 6px;
+  }
+  .ph-hint-line {
+    width: 1px;
+    height: 16px;
+    background: linear-gradient(to top, var(--ink), transparent);
+    /* three breaths, then it holds at full strength: an endless breath cost ~25 ms/s of main thread at rest (P7) */
+    animation: ph-breathe 1.6s ease-in-out 3 alternate forwards;
+  }
+
+  /* ---- Index sheet ---- */
+  html[data-sheet] {
+    overflow: hidden;
+  }
+  .ph-sheet {
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    max-width: none;
+    height: 100%;
+    max-height: none;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: var(--sheet);
+    color: var(--ink);
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    /* the HUD root is pointer-events:none, and the top layer still inherits it */
+    pointer-events: auto;
+  }
+  /* the dialog takes the initial focus itself (IndexSheet): a ring around the whole screen says nothing */
+  .ph-sheet:focus {
+    outline: none;
+  }
+  .ph-sheet[open] {
+    animation: ph-sheet-in var(--dur-sheet-in) var(--ease-soft) both;
+  }
+  .ph-sheet[open][data-closing] {
+    animation: ph-sheet-out var(--dur-sheet-out) var(--ease-hard) both;
+  }
+  .ph-sheet::backdrop {
+    background: transparent;
+  }
+  .ph-sheet-inner {
+    display: flex;
+    flex-direction: column;
+    gap: 32px;
+    width: 100%;
+    max-width: 560px;
+    min-height: 100%;
+    margin-inline: auto;
+    padding: calc(env(safe-area-inset-top, 0px) + 10px) max(var(--gutter), calc(env(safe-area-inset-right, 0px) + 12px))
+      calc(env(safe-area-inset-bottom, 0px) + 32px) max(var(--gutter), calc(env(safe-area-inset-left, 0px) + 12px));
+  }
+  .ph-sheet-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    min-height: 48px;
+  }
+  .ph-sheet-mark {
+    width: auto;
+    height: 22px;
+    color: var(--ink);
+  }
+  .ph-close {
+    display: grid;
+    place-items: center;
+    width: 48px;
+    height: 48px;
+    margin-right: -14px;
+    border-radius: 999px;
+    color: var(--ink);
+    transition: opacity 80ms linear;
+  }
+  .ph-list {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .ph-sheet-sec > h3 {
+    margin: 0 0 4px;
+  }
+
+  /* stations: 40 px display names, a mono index and blurb; the current one gets a cyan dot */
+  .ph-st {
+    position: relative;
+    display: grid;
+    grid-template-columns: 28px minmax(0, 1fr) auto;
+    align-items: baseline;
+    column-gap: 12px;
+    width: 100%;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--line);
+    color: var(--ink);
+    text-align: left;
+    transition: opacity 80ms linear;
+  }
+  .ph-list > li:first-child > .ph-st {
+    border-top: 1px solid var(--line);
+  }
+  .ph-st:active,
+  .ph-row:active {
+    opacity: 0.7;
+  }
+  .ph-st-name {
+    font-family: var(--font-display), system-ui, sans-serif;
+    font-size: 2.5rem;
+    font-weight: 600;
+    line-height: 1;
+    letter-spacing: -0.04em;
+  }
+  .ph-st-blurb {
+    max-width: 9.5em;
+    text-align: right;
+  }
+  .ph-st-dot {
+    position: absolute;
+    top: 50%;
+    left: -13px;
+    width: 6px;
+    height: 6px;
+    margin-top: -3px;
+    border-radius: 50%;
+    background: var(--screen);
+    box-shadow: 0 0 10px rgba(108, 242, 255, 0.6);
+  }
+
+  /* 48 px rows: projects, socials, email, settings */
+  .ph-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    min-height: 48px;
+    border-bottom: 1px solid var(--line);
+    color: var(--ink);
+    font-size: 16px;
+    line-height: 1.3;
+    text-align: left;
+    transition: opacity 80ms linear;
+  }
+  .ph-row-icon {
+    flex: none;
+    color: var(--muted);
+  }
+  .ph-row-arrow {
+    margin-left: auto;
+    padding-left: 8px;
+    color: var(--muted);
+    font-family: var(--font-mono), ui-monospace, monospace;
+  }
+  .ph-row-mono {
+    font-family: var(--font-mono), ui-monospace, monospace;
+    font-size: 13px;
+    letter-spacing: 0.02em;
+  }
+  .ph-project-name {
+    font-family: var(--font-display), system-ui, sans-serif;
+    font-size: 18px;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+  }
+  .ph-row[aria-current] .ph-project-name {
+    color: var(--screen);
+  }
+  .ph-load {
+    font-family: var(--font-mono), ui-monospace, monospace;
+    font-size: 13px;
+    letter-spacing: 0.02em;
+  }
+
+  /* switches: the whole row is the label (48 px target) */
+  .ph-switch-row {
+    justify-content: space-between;
+    cursor: pointer;
+  }
+  .ph-switch-row[data-disabled] {
+    cursor: default;
+  }
+  .ph-switch-text {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding-block: 6px;
+  }
+  .ph-switch {
+    flex: none;
+    margin: 0;
+  }
+  /* Safari's native <input switch>: keep it, in the system accent */
+  .ph-switch[data-native] {
+    accent-color: var(--screen);
+  }
+  /* elsewhere: a drawn track + thumb (background only, no pseudo-elements on inputs) */
+  .ph-switch:not([data-native]) {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 44px;
+    height: 26px;
+    border-radius: 999px;
+    background-color: rgba(232, 233, 240, 0.16);
+    background-image: radial-gradient(circle, var(--ink) 0 9px, transparent 9.5px);
+    background-position: 0 50%;
+    background-repeat: no-repeat;
+    background-size: 26px 26px;
+    box-shadow: inset 0 0 0 1px rgba(232, 233, 240, 0.18);
+    transition:
+      background-position 180ms var(--ease-hard),
+      background-color 180ms var(--ease-hard);
+  }
+  .ph-switch:not([data-native]):checked {
+    background-color: var(--screen);
+    background-image: radial-gradient(circle, var(--void) 0 9px, transparent 9.5px);
+    background-position: 100% 50%;
+  }
+  .ph-switch:disabled {
+    opacity: 0.55;
+  }
+
+  /* '// App' only when the install / share offer renders something */
+  .ph-sheet-app:not(:has([data-install-hint], [data-install-note])) {
+    display: none;
+  }
+
+  .ph-sheet-foot {
+    display: grid;
+    gap: 4px;
+    margin-top: auto;
+    padding-top: 16px;
+    border-top: 1px solid var(--line);
+  }
+  .ph-sheet-foot p {
+    margin: 0;
+    white-space: normal;
+  }
+  /* the telemetry line wraps only between its items, never inside one */
+  .ph-status > span {
+    white-space: nowrap;
+  }
+  .ph-offline {
+    color: var(--screen);
+  }
+
+  /* ---- route changes: the Dock and the monogram ride their own view-transition layers, on top and solid.
+     In the root snapshot a project page's fade-in (::view-transition-new(.vt-page)) was drawn over them, and
+     the root crossfade washed the Dock out while its tabs swapped buttons for Links. ---- */
+  .ph-dock {
+    view-transition-name: ph-dock;
+  }
+  [data-hud] > header {
+    view-transition-name: ph-mono;
+  }
+  ::view-transition-group(ph-dock),
+  ::view-transition-group(ph-mono) {
+    z-index: 100;
+  }
+  ::view-transition-old(ph-dock),
+  ::view-transition-old(ph-mono) {
+    display: none;
+  }
+  ::view-transition-new(ph-dock),
+  ::view-transition-new(ph-mono) {
+    animation: none;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .ph-dock,
+    .ph-hint,
+    .ph-hint-line,
+    .ph-sheet[open],
+    .ph-sheet[open][data-closing] {
+      animation: none;
+    }
+    .ph-shimmer {
+      display: none;
+    }
+    .ph-veil,
+    .ph-veil[data-on] {
+      transition: none;
+    }
+  }
+}
+
+/* ---- landscape: the Dock becomes a right rail (64 px, vertically centred), 44 px targets ---- */
+@media (pointer: coarse) and (max-height: 500px) and (orientation: landscape) {
+  .ph-dock {
+    top: 50%;
+    right: max(12px, env(safe-area-inset-right, 0px));
+    bottom: auto;
+    left: auto;
+    flex-direction: column;
+    gap: 4px;
+    width: var(--rail-w);
+    height: auto;
+    margin: 0;
+    padding: 6px 4px;
+    border-radius: 32px;
+    translate: 0 -50%;
+    animation-name: ph-rail-in;
+    --recede-x: calc(100% + 24px);
+    --recede-y: 0px;
+  }
+  .ph-tabs {
+    flex: none;
+    flex-direction: column;
+    width: 100%;
+    height: auto;
+  }
+  .ph-tab-item {
+    flex: none;
+  }
+  .ph-tab {
+    flex: none;
+    width: 48px;
+    min-width: 44px;
+    min-height: 44px;
+    margin-inline: auto;
+    padding-inline: 0;
+  }
+  /* numbers only on the rail; the labels stay for screen readers */
+  .ph-tab > .ph-tab-num {
+    display: block;
+  }
+  .ph-tab > .ph-tab-label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+  }
+  .ph-tab > .ph-dots {
+    bottom: 5px;
+  }
+  .ph-divider {
+    width: 24px;
+    height: 1px;
+  }
+  .ph-menu {
+    width: 44px;
+    height: 44px;
+  }
+  .ph-offline-dot {
+    top: 9px;
+    right: 8px;
+  }
+  .ph-lap {
+    top: 32px;
+    bottom: 32px;
+    left: 0;
+    right: auto;
+    width: 2px;
+    height: auto;
+  }
+  .ph-lap-fill {
+    transform: scaleY(0);
+    transform-origin: center top;
+  }
+  .ph-shimmer {
+    animation-name: ph-shimmer-y;
+  }
+  .ph-shimmer::before {
+    right: 0;
+    bottom: auto;
+    width: auto;
+    height: 24px;
+    background: linear-gradient(180deg, transparent, var(--screen), transparent);
+  }
+  /* no hint in landscape */
+  .ph-hint {
+    display: none;
+  }
+  .ph-st-name {
+    font-size: 2rem;
+  }
+}
+
+@keyframes ph-dock-in {
+  from {
+    opacity: 0;
+    translate: 0 24px;
+  }
+}
+@keyframes ph-dock-in-top {
+  from {
+    opacity: 0;
+    translate: 0 -24px;
+  }
+}
+@keyframes ph-rail-in {
+  from {
+    opacity: 0;
+    translate: 24px -50%;
+  }
+}
+@keyframes ph-shimmer {
+  from {
+    transform: translateX(-24px);
+  }
+  to {
+    transform: translateX(100%);
+  }
+}
+@keyframes ph-shimmer-y {
+  from {
+    transform: translateY(-24px);
+  }
+  to {
+    transform: translateY(100%);
+  }
+}
+@keyframes ph-sheet-in {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+}
+@keyframes ph-sheet-out {
+  to {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+}
+@keyframes ph-fade-in {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes ph-breathe {
+  from {
+    opacity: 0.25;
+    transform: translateY(3px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(-3px);
+  }
+}

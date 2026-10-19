@@ -1,0 +1,135 @@
+/*
+ * CASE FILE design tokens (reference/top/DIRECTION.md §3A). Strict grayscale; whites never above #F0F0F0.
+ * Imported from app/globals.css. Font families come from src/styles/fonts.ts.
+ */
+:root {
+  /* palette */
+  --ink: #000000; /* ground */
+  --ink-1: #0b0b0b; /* text on paper */
+  --fg: #f0f0f0; /* brightest white. Never #fff. */
+  --fg-2: #9b9b9b; /* secondary mono */
+  --fg-3: #5c5c5c; /* tertiary: indices, units */
+  --rule: rgba(240, 240, 240, 0.16); /* 1 px hairlines */
+  --paper: #e9e9e7; /* the one polarity flip: the file view */
+  --paper-fg-2: #5a5a5a;
+  --paper-rule: rgba(11, 11, 11, 0.18);
+
+  /* grid: 12 columns, 40–56 px gutters; phones 4 columns, 16 px */
+  --cols: 12;
+  --m: clamp(32px, 2.8vw, 56px); /* outer margin */
+  --g: clamp(32px, 2.8vw, 56px); /* column gutter */
+  --bar: 44px; /* fixed header height */
+  --sec-gap: clamp(96px, 14vh, 150px); /* space above each section head */
+
+  /* type */
+  --font-display-stack: var(--font-display), "Arial Narrow", sans-serif;
+  --font-mono-stack: var(--font-mono), ui-monospace, monospace;
+  --font-caption-stack: var(--font-caption), var(--font-caption-cyr), ui-rounded, sans-serif;
+  --font-body-stack: var(--font-body), system-ui, sans-serif;
+  --mono-size: 11px;
+  --mono-tracking: 0.06em;
+  --caption-size: 15px;
+  --caption-leading: 1.3;
+  --caption-tracking: 0.04em;
+  /* "NAZAR AKANOV" in the display face is 5.79 em wide (measured): this makes it span the grid exactly */
+  --name-ratio: 5.8;
+
+  /* motion */
+  --ease-expo-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-slam: cubic-bezier(0.7, 0, 0.84, 0);
+  --ease-flip: cubic-bezier(0.76, 0, 0.24, 1);
+
+  /* z-order */
+  --z-header: 40;
+  --z-file: 70;
+  --z-loader: 80;
+  --z-flash: 90;
+}
+
+@media (max-width: 767px) {
+  :root {
+    --cols: 4;
+    --m: 16px;
+    --g: 16px;
+    --bar: 40px;
+    --caption-size: 13px;
+  }
+}
+
+/*
+ * Typed caption (TypeCaption.tsx). One custom property, --p (characters typed, a float), drives every
+ * character of every layer: a char cuts in at --tc-dim once --p passes its index --i, then (after
+ * --tc-lag chars) ramps to full over --tc-ramp chars. The blurred clones under the sharp core are the
+ * bloom; a char's bloom lights as it brightens and goes out over --tc-fade chars once its whole line
+ * (last index --le) has brightened, so only the line being typed ever glows.
+ */
+.tc-root {
+  --p: 0;
+  --tc-dim: 0.35;
+  --tc-lag: 1.25;
+  --tc-ramp: 5;
+  --tc-fade: 12.5;
+  position: relative;
+  display: block;
+  font-family: var(--font-caption-stack);
+  font-size: var(--caption-size);
+  font-weight: 500;
+  line-height: var(--caption-leading);
+  letter-spacing: var(--caption-tracking);
+  text-transform: uppercase;
+  color: var(--fg);
+}
+.tc-root.tc-tone-dark {
+  color: var(--ink-1);
+}
+.tc-layer,
+.tc-line {
+  display: block;
+}
+@media (min-width: 768px) {
+  .tc-line {
+    white-space: nowrap;
+  }
+}
+.tc-fx {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  user-select: none;
+}
+.tc-ch {
+  --d: calc(var(--p) - var(--i));
+  opacity: calc(
+    clamp(0, var(--d) * 1000, 1) *
+      clamp(var(--tc-dim), var(--tc-dim) + (var(--d) - var(--tc-lag)) * (1 - var(--tc-dim)) / var(--tc-ramp), 1)
+  );
+}
+.tc-fx .tc-ch {
+  opacity: calc(
+    clamp(0, (var(--d) - var(--tc-lag)) / var(--tc-ramp), 1) *
+      clamp(0, 1 - (var(--p) - var(--le) - var(--tc-lag) - var(--tc-ramp)) / var(--tc-fade), 1)
+  );
+}
+.tc-g1 {
+  filter: blur(0.26em);
+  opacity: 0.9;
+}
+.tc-g2 {
+  filter: blur(0.82em);
+  -webkit-text-stroke: 0.077em currentColor;
+}
+.tc-g2 {
+  opacity: 0.7;
+}
+@media (prefers-reduced-motion: reduce) {
+  .tc-root {
+    --p: 100000 !important;
+  }
+}
+
+:root {
+  /* display-face widths in em (measured in Chromium), used to size type that must span the grid */
+  --name2-ratio: 3.14; /* "AKANOV" */
+  --longest-ratio: 4.68; /* "NISCOURSES" */
+  --email-ratio: 10.7; /* "NAZARAKANOV@GMAIL.COM" */
+}

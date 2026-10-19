@@ -1,0 +1,214 @@
+/*
+ * DOSSIER design tokens. Strict grayscale (the edit measures zero chroma); highlights crushed to #F0F0F0.
+ * Imported from app/globals.css. The font family comes from src/styles/fonts.ts (--font-caption).
+ */
+:root {
+  /* palette */
+  --ink-0: #000000; /* main ground */
+  --ink-1: #080808; /* near-black, vignette core */
+  --ink-2: #1a1a1a; /* dark texture; caption colour on light ground */
+  --ink-3: #373737; /* shadowed paper (inverted chapters) */
+  --mid: #6e6e6e; /* grey wash */
+  --mid-2: #8a8a8a; /* dim, not-yet-revealed characters */
+  --paper-2: #b0b0b0; /* light-grey ground (inverted chapters) */
+  --paper-1: #ececec; /* ink burst body */
+  --paper-0: #f0f0f0; /* brightest white. Never #fff. */
+
+  --glow-color: rgba(255, 255, 255, 0.55);
+  --glow-color-soft: rgba(255, 255, 255, 0.28);
+  --halo-dark: rgba(0, 0, 0, 0.55);
+
+  /* glow (text-shadow). The typed captions use the layered bloom in .tc-* below; this is the cheap
+     single-element version for static labels (≈ 2/3 of the bloom). */
+  --glow-text: 0 0 1.5px rgba(240, 240, 240, 0.9), 0 0 6px rgba(240, 240, 240, 0.5), 0 0 18px rgba(240, 240, 240, 0.3);
+  --glow-text-strong: 0 0 3px rgba(255, 255, 255, 0.7), 0 0 12px var(--glow-color), 0 0 28px var(--glow-color-soft);
+  --glow-text-dark: 0 0 4px var(--halo-dark), 0 0 10px rgba(0, 0, 0, 0.3);
+
+  /* type */
+  --font-ui: var(--font-caption), ui-rounded, "Quicksand", system-ui, sans-serif;
+  /* measured on reference/frames/t_06.50.jpg (see reference/web-refs.md §0): font-size ≈ cap ÷ 0.70,
+     24.5 px line pitch at 19.5 px, +0.035em tracking. 400 + bloom on dark, 500 + dark halo on light. */
+  /* round 3: ~16.6 px at 960×720 (frame-equivalent ≈ 16–17 at the frame's size), 20 px cap on desktop,
+     phones get their own width-based clamp below (≥ 11 px) */
+  --caption-size: clamp(12px, calc(0.6vw + 1.5vh), 20px);
+  --caption-leading: 1.26;
+  --caption-tracking: 0.035em;
+  --caption-weight: 400;
+  --caption-weight-dark: 500;
+  --caption-ink: #222222; /* caption colour on light ground (measured core ≈ #2d2d2d) */
+  --title-size: clamp(3rem, 10.5vw, 11.5rem);
+  --title-weight: 400;
+  --title-tracking: 0.08em;
+  /* the edit's title glyphs are fat glossy extruded blobs (d_2.40): a stepped dark extrusion down-right
+     under a blown-out face, plus bloom. em-based so it scales with the title. */
+  --title-shadow: 0 0 2px rgba(240, 240, 240, 0.85), 0.012em 0.016em 0 #b8b8b8, 0.024em 0.032em 0 #8c8c8c,
+    0.036em 0.048em 0 #626262, 0.048em 0.064em 0 #3e3e3e, 0.06em 0.08em 1px #242424,
+    0 0 0.25em rgba(240, 240, 240, 0.32), 0 0 0.7em rgba(240, 240, 240, 0.16);
+  --statement-size: clamp(3rem, 11vh, 7rem);
+
+  /* layout */
+  --gutter: clamp(16px, 2.2vw, 32px);
+  --strip-w: 58vw;
+  --strip-h: 20vh;
+
+  /* motion */
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1); /* ≈ power3.out */
+  --ease-in: cubic-bezier(0.55, 0, 0.75, 0.06); /* ≈ power2.in */
+  --ease-expo-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --dur-cut: 0ms; /* hard cuts */
+  --dur-fast: 120ms;
+  --dur-char: 200ms; /* per-char brighten */
+  --dur-exit: 250ms;
+  --type-cps: 40; /* characters per second (read by TypeCaption) */
+  --bpm: 104;
+
+  /* fx */
+  /* grain: overlay-blended noise tile. Overlay leaves #000 untouched (the edit's flat blacks measure
+     0–1/255), shows on mid-tones, barely on #f0f0f0. ~10 fps jumps (steps(1)), see Grain.tsx. */
+  --grain-opacity: 0.22;
+  --grain-blend: overlay;
+  --vignette: radial-gradient(ellipse 120% 95% at 50% 50%, transparent 52%, rgba(0, 0, 0, 0.42) 82%, rgba(0, 0, 0, 0.78) 100%);
+
+  /* z-order (back to front) */
+  --z-stage: 0;
+  --z-ui: 40;
+  --z-fx: 50;
+  --z-flash: 60;
+}
+
+@media (max-width: 767px) {
+  :root {
+    --title-size: 15vw;
+    --caption-size: clamp(11px, 3.1vw, 13px);
+  }
+}
+
+/*
+ * INVERT chapter: the builder sets <html data-theme="invert"> while the ground is light. The post layer
+ * and the caption voice follow: no dark vignette (the edit's white sections have bright edges, d_8.60),
+ * grain as a faint normal-blend speckle (overlay vanishes on near-white), and every caption switches to
+ * the dark-on-light look unless it opts out with data-tone-lock.
+ */
+:root[data-theme="invert"] {
+  --vignette: none;
+  --grain-blend: normal;
+  --grain-opacity: 0.07;
+}
+
+/* The caption voice: tiny, glowing, ALL CAPS. Label and body share size and weight. Static labels use
+   this class; typed captions (TypeCaption) use .tc-* below. */
+.caption {
+  font-family: var(--font-ui);
+  font-size: var(--caption-size);
+  font-weight: var(--caption-weight);
+  line-height: var(--caption-leading);
+  letter-spacing: var(--caption-tracking);
+  text-transform: uppercase;
+  color: var(--paper-0);
+  text-shadow: var(--glow-text);
+}
+
+.caption--dark,
+:root[data-theme="invert"] .caption:not([data-tone-lock]) {
+  font-weight: var(--caption-weight-dark);
+  color: var(--caption-ink);
+  text-shadow: var(--glow-text-dark);
+}
+
+/*
+ * Typed caption (TypeCaption.tsx). One custom property, --p (characters typed, a float), drives every
+ * character of every layer: a char cuts in at --tc-dim once --p passes its index --i, then (after
+ * --tc-lag chars) ramps to full over --tc-ramp chars. The three blurred clones under the sharp core are
+ * the "deep glow" calibrated against t_06.50 (reference/proto/glow_compare.png); their chars only light
+ * up as the core char brightens, so the dim leading edge has no glow, as in the edit.
+ */
+.tc-root {
+  --p: 0;
+  --tc-dim: 0.35;
+  --tc-lag: 2.4;
+  --tc-ramp: 8;
+  position: relative;
+  display: block;
+  font-family: var(--font-ui);
+  font-size: var(--caption-size);
+  font-weight: var(--caption-weight);
+  line-height: var(--caption-leading);
+  letter-spacing: var(--caption-tracking);
+  text-transform: uppercase;
+  color: var(--paper-0);
+}
+.tc-root.tc-tone-dark,
+:root[data-theme="invert"] .tc-root:not([data-tone-lock]) {
+  font-weight: var(--caption-weight-dark);
+  color: var(--caption-ink);
+}
+:root[data-theme="invert"] .tc-root:not([data-tone-lock]) .tc-fx {
+  display: none;
+}
+.tc-layer,
+.tc-line {
+  display: block;
+}
+/* lines are pre-broken (the edit never re-wraps a caption): keep them whole above phone width, even
+   if a line runs a little past its slot's max-width. Phones wrap at word boundaries. */
+@media (min-width: 768px) {
+  .tc-line {
+    white-space: nowrap;
+  }
+}
+.tc-fx {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  user-select: none;
+}
+.tc-ch {
+  --d: calc(var(--p) - var(--i));
+  opacity: calc(
+    clamp(0, var(--d) * 1000, 1) *
+      clamp(var(--tc-dim), var(--tc-dim) + (var(--d) - var(--tc-lag)) * (1 - var(--tc-dim)) / var(--tc-ramp), 1)
+  );
+}
+.tc-fx .tc-ch {
+  opacity: clamp(0, (var(--d) - var(--tc-lag)) / var(--tc-ramp), 1);
+}
+/* blur radii in em so the bloom scales with the caption (calibrated at 19.5 px: 5 / 16 / 44 px) */
+.tc-g1 {
+  filter: blur(0.26em);
+  opacity: 0.9;
+}
+.tc-g2 {
+  filter: blur(0.82em);
+  -webkit-text-stroke: 0.077em currentColor;
+}
+.tc-g3 {
+  filter: blur(2.26em);
+  -webkit-text-stroke: 0.26em currentColor;
+}
+.tc-core {
+  text-shadow: 0 0 1.5px rgba(240, 240, 240, 0.9);
+}
+.tc-tone-dark .tc-core {
+  text-shadow: 0 0 6px rgba(0, 0, 0, 0.25);
+}
+/* inverted chapters: dark text with a light halo, invisible on the light ground but it keeps the line
+   legible where it crosses the black burst (t_10.00) */
+:root[data-theme="invert"] .tc-root:not([data-tone-lock]) .tc-core {
+  text-shadow: 0 0 2px rgba(240, 240, 240, 0.9), 0 0 8px rgba(240, 240, 240, 0.65), 0 0 18px rgba(240, 240, 240, 0.35);
+}
+/* phones: drop the two wide clones, put a cheap shadow bloom on the core instead */
+@media (max-width: 767px) {
+  .tc-g2,
+  .tc-g3 {
+    display: none;
+  }
+  .tc-root:not(.tc-tone-dark) .tc-core {
+    text-shadow: 0 0 1.5px rgba(240, 240, 240, 0.9), 0 0 10px rgba(240, 240, 240, 0.45);
+  }
+}
+/* reduced motion: captions are simply there, fully lit */
+@media (prefers-reduced-motion: reduce) {
+  .tc-root {
+    --p: 100000 !important;
+  }
+}

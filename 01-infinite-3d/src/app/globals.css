@@ -1,0 +1,949 @@
+@import "tailwindcss";
+
+/* ---- Phone gate: THE mobile rule (mirror of PHONE_MQ in src/components/world/phone.ts; phone.test.ts keeps them identical) ---- */
+@custom-variant phone {
+  @media (pointer: coarse) and (max-width: 767px), (pointer: coarse) and (max-height: 500px) {
+    @slot;
+  }
+}
+@custom-variant phone-land {
+  @media (pointer: coarse) and (max-height: 500px) and (orientation: landscape) {
+    @slot;
+  }
+}
+@custom-variant phone-app {
+  @media (pointer: coarse) and (max-width: 767px) and (display-mode: standalone), (pointer: coarse) and (max-height: 500px) and (display-mode: standalone) {
+    @slot;
+  }
+}
+/* HUD root inset by the safe areas (env() is 0 on desktop: identical to inset-0 there) */
+@utility hud-safe {
+  top: env(safe-area-inset-top, 0px);
+  right: env(safe-area-inset-right, 0px);
+  bottom: env(safe-area-inset-bottom, 0px);
+  left: env(safe-area-inset-left, 0px);
+}
+
+/* ---- Design tokens: night dev room ---- */
+:root {
+  --void: #0a0b10;
+  --wall: #151824;
+  --lamp: #ffb86b;
+  --screen: #6cf2ff;
+  --ink: #e8e9f0;
+  --muted: #9096ad;
+  --line: rgba(232, 233, 240, 0.14);
+  /* mirror of world/theme.ts (PALETTE, EASE, DUR): keep the values identical */
+  --moon: #8aa3ff;
+  --violet: #9d8cff;
+  --ice: #b5d5ff;
+  --fringe-r: #ff6096;
+  --fringe-c: #60e2ff;
+  --ease-soft: cubic-bezier(0.2, 0.7, 0.1, 1);
+  --ease-hard: cubic-bezier(0.76, 0, 0.24, 1);
+  --ease-inout: cubic-bezier(0.5, 0, 0.1, 1);
+  --ease-sine-out: cubic-bezier(0.39, 0.575, 0.565, 1);
+  --ease-quart-out: cubic-bezier(0.165, 0.84, 0.44, 1);
+  --spring: linear(0, 0.35 8%, 0.82 20%, 1.08 34%, 1.12 42%, 1.02 60%, 0.98 72%, 1);
+  --dur-hud: 600ms;
+  --dur-veil: 700ms;
+  --dur-replay: 250ms;
+  --dur-boot: 900ms;
+  --dur-boot-step: 120ms;
+  /* per-project accent (Projects / detail pages override it inline) */
+  --accent: var(--screen);
+  /* scroll velocity: the driver writes --vel / --vel-abs on each .display itself (loop mode only;
+     never on <html>, which would restyle the whole page every frame); this is the at-rest fallback */
+  --vel-abs: max(var(--vel, 0), calc(var(--vel, 0) * -1));
+  --scrim-at: 30% 40%;
+  --scrim-size: 60% 60%;
+  --scrim-a: 0.55;
+}
+
+@theme inline {
+  --color-void: var(--void);
+  --color-wall: var(--wall);
+  --color-lamp: var(--lamp);
+  --color-screen: var(--screen);
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-moon: var(--moon);
+  --color-violet: var(--violet);
+  --color-ice: var(--ice);
+  --color-line: var(--line);
+  --font-sans: var(--font-display);
+  --font-mono: var(--font-mono);
+}
+
+html {
+  background: var(--void);
+  color: var(--ink);
+  color-scheme: dark;
+  font-family: var(--font-display), system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+body {
+  background: var(--void);
+  min-height: 100svh;
+}
+
+/* In loop mode the native scrollbar would jump at the seam; the HUD ring replaces it. */
+html[data-loop="loop"] {
+  scrollbar-width: none;
+}
+html[data-loop="loop"]::-webkit-scrollbar {
+  display: none;
+}
+
+/* ---- Type system ----
+   .marker  mono HUD text (readable size over bright scenes)
+   .label   mono uppercase eyebrow / control label
+   .display display headline: tight tracking, heavy */
+.marker {
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 12px;
+  line-height: 1.55;
+  letter-spacing: 0.02em;
+  color: var(--ink);
+  text-shadow: 0 1px 14px rgba(10, 11, 16, 0.9);
+  font-variant-numeric: tabular-nums;
+}
+.marker-muted {
+  color: var(--muted);
+}
+.label {
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 11px;
+  line-height: 1.4;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  font-variant-numeric: tabular-nums;
+  text-shadow: 0 1px 14px rgba(10, 11, 16, 0.9);
+}
+.display {
+  font-family: var(--font-display), system-ui, sans-serif;
+  font-weight: 600;
+  letter-spacing: -0.04em;
+  line-height: 0.92;
+  text-wrap: balance;
+  text-shadow: 0 2px 40px rgba(10, 11, 16, 0.6);
+}
+.prose-ink {
+  text-wrap: pretty;
+  text-shadow: 0 1px 20px rgba(10, 11, 16, 0.8);
+}
+
+/* Sections stack on top of the fixed canvas */
+.station {
+  position: relative;
+  z-index: 1;
+  /* decorative bleed (the particle name canvas) must not widen the layout viewport on phones,
+     which pushed the right-anchored nav pill off-screen. clip, not hidden: no scroll container */
+  overflow-x: clip;
+}
+
+/* Local scrims so text stays readable over bright bloom. Position via --scrim-at. */
+.scrim {
+  background: radial-gradient(var(--scrim-size) at var(--scrim-at), rgba(10, 11, 16, var(--scrim-a)), transparent 70%);
+}
+.scrim-left {
+  --scrim-at: 22% 50%;
+  --scrim-size: 55% 70%;
+  --scrim-a: 0.7;
+}
+.scrim-right {
+  --scrim-at: 78% 50%;
+  --scrim-size: 55% 70%;
+  --scrim-a: 0.7;
+}
+.scrim-corner {
+  --scrim-at: 12% 92%;
+  --scrim-size: 70% 60%;
+  --scrim-a: 0.75;
+}
+@media (max-width: 639px) {
+  .scrim-left,
+  .scrim-right,
+  .scrim-corner {
+    --scrim-at: 50% 55%;
+    --scrim-size: 110% 80%;
+    --scrim-a: 0.82;
+  }
+}
+/* Mono link: hairline underline that lights up, and '[ ]' brackets slide in (interactive grammar).
+   Optional roll: wrap the label in <span class="lm" data-text="same text">; its text becomes the
+   layout box and two pseudo layers roll up on hover (any other host: add class "roll"). Pseudo content carries empty alt text
+   ("/ ''") so the link is read once. */
+.link-mono {
+  position: relative;
+  display: inline-block;
+  border-bottom: 1px solid rgba(232, 233, 240, 0.45);
+  padding-bottom: 2px;
+  transition:
+    color 200ms ease,
+    border-color 200ms ease,
+    transform 150ms ease;
+}
+.link-mono::before,
+.link-mono::after {
+  position: absolute;
+  top: 0;
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    opacity 350ms var(--ease-hard),
+    transform 350ms var(--ease-hard);
+}
+.link-mono::before {
+  content: "[";
+  content: "[" / "";
+  right: 100%;
+  margin-right: 0.45em;
+  transform: translateX(0.6em);
+}
+.link-mono::after {
+  content: "]";
+  content: "]" / "";
+  left: 100%;
+  margin-left: 0.45em;
+  transform: translateX(-0.6em);
+}
+.link-mono:hover,
+.link-mono:focus-visible {
+  color: var(--screen);
+  border-color: var(--screen);
+}
+.link-mono:hover::before,
+.link-mono:hover::after,
+.link-mono:focus-visible::before,
+.link-mono:focus-visible::after {
+  opacity: 1;
+  transform: none;
+}
+.link-mono:active {
+  transform: translateY(1px);
+}
+.link-quiet {
+  border-bottom-color: transparent;
+}
+.lm {
+  position: relative;
+  display: inline-block;
+  overflow: clip;
+  vertical-align: bottom;
+  -webkit-text-fill-color: transparent;
+  text-shadow: none;
+}
+.lm::before,
+.lm::after {
+  content: attr(data-text);
+  content: attr(data-text) / "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  white-space: nowrap;
+  -webkit-text-fill-color: currentColor;
+  text-shadow: 0 1px 14px rgba(10, 11, 16, 0.9);
+  transition: transform 350ms var(--ease-hard);
+}
+.lm::after {
+  top: 100%;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .link-mono:hover .lm::before,
+  .link-mono:hover .lm::after,
+  .link-mono:focus-visible .lm::before,
+  .link-mono:focus-visible .lm::after,
+  .roll:hover .lm::before,
+  .roll:hover .lm::after,
+  .roll:focus-visible .lm::before,
+  .roll:focus-visible .lm::after {
+    transform: translateY(-100%);
+  }
+}
+/* the same roll for an icon: two stacked copies in a clipped box; the first slides out along --dir
+   (1 = right, -1 = left) as the second slides in behind it. Reduced motion: colour only. */
+.icon-roll {
+  position: relative;
+  display: block;
+  overflow: clip;
+}
+.icon-roll > :last-child {
+  position: absolute;
+  left: 0;
+  top: 0;
+  transform: translateX(calc(-100% * var(--dir, 1)));
+}
+@media (prefers-reduced-motion: no-preference) {
+  .icon-roll > * {
+    transition: transform 350ms var(--ease-hard);
+  }
+  .roll:hover .icon-roll > :first-child,
+  .roll:focus-visible .icon-roll > :first-child {
+    transform: translateX(calc(100% * var(--dir, 1)));
+  }
+  .roll:hover .icon-roll > :last-child,
+  .roll:focus-visible .icon-roll > :last-child {
+    transform: none;
+  }
+}
+/* under reduced motion: colour + brackets only, no slide */
+@media (prefers-reduced-motion: reduce) {
+  .link-mono::before,
+  .link-mono::after {
+    transform: none;
+  }
+}
+
+/* ---- Label grammar ----
+   '//' marks PASSIVE labels (eyebrows, status, section markers); '[ ]' marks INTERACTIVE things.
+   Both prefixes are decorative: empty alt text keeps them out of the accessible name. */
+.slash::before {
+  content: "// ";
+  content: "// " / "";
+  white-space: pre;
+  opacity: 0.6;
+}
+.bracket::before {
+  content: "[ ";
+  content: "[ " / "";
+  white-space: pre;
+}
+.bracket::after {
+  content: " ]";
+  content: " ]" / "";
+  white-space: pre;
+}
+
+/* ---- Scramble (hud/Scramble.tsx) ----
+   Words never break inside; a scrambling char keeps the final letter as its layout box
+   (transparent) and paints the glyph on top, so nothing reflows (CLS 0). */
+.sc-w {
+  white-space: nowrap;
+}
+.sc-c {
+  position: relative;
+}
+.sc-c[data-g] {
+  -webkit-text-fill-color: transparent;
+  text-shadow: none;
+}
+.sc-c[data-g]::after {
+  content: attr(data-g);
+  position: absolute;
+  left: 0;
+  top: 0;
+  -webkit-text-fill-color: currentColor;
+}
+/* igloo lockup: letters sit on small deterministic offsets (set inline as translate) */
+.lockup .sc-c {
+  display: inline-block;
+}
+.accent-rule {
+  display: block;
+  width: 3.5rem;
+  height: 1px;
+  margin-top: 1.1rem;
+  background: var(--accent);
+  box-shadow: 0 0 12px var(--accent);
+}
+.text-right .accent-rule {
+  margin-left: auto;
+}
+
+/* ---- Particle typography (hero name) ---- */
+.pt-title {
+  --pt-color: var(--ink);
+}
+.pt-wrap[data-particles="on"] .pt-title {
+  color: transparent;
+  text-shadow: none;
+}
+.pt-canvas {
+  filter: drop-shadow(0 2px 24px rgba(10, 11, 16, 0.55));
+}
+
+/* ---- Jitter-style word scrub ---- */
+@keyframes word-in {
+  from { opacity: 0.16; }
+  to { opacity: 1; }
+}
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .scrub {
+      view-timeline-name: --scrub;
+    }
+    .scrub-word {
+      animation: word-in linear both;
+      animation-timeline: --scrub;
+      animation-range: cover calc(10% + var(--k) * 26%) cover calc(16% + var(--k) * 26%);
+    }
+  }
+}
+
+/* ---- Glass surfaces: one radius scale. Cards 14px, pills full. ---- */
+.spot-card {
+  --mx: -400px;
+  --my: -400px;
+  position: relative;
+  border-radius: 14px;
+  padding: 1rem 1.1rem 1.1rem;
+  background:
+    radial-gradient(260px circle at var(--mx) var(--my), rgba(108, 242, 255, 0.09), transparent 65%),
+    rgba(14, 16, 26, 0.58);
+  -webkit-backdrop-filter: blur(10px) saturate(140%);
+  backdrop-filter: blur(10px) saturate(140%);
+  box-shadow:
+    inset 0 1px 0 rgba(232, 233, 240, 0.07),
+    0 18px 40px -24px rgba(4, 6, 14, 0.9);
+}
+.spot-card::before {
+  /* 1px border that brightens around the cursor (Magic UI magic card) */
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background:
+    radial-gradient(220px circle at var(--mx) var(--my), rgba(108, 242, 255, 0.55), transparent 70%),
+    rgba(232, 233, 240, 0.1);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
+  pointer-events: none;
+}
+.chip {
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 12px;
+  line-height: 1;
+  padding: 0.45rem 0.65rem;
+  border-radius: 999px;
+  background: rgba(232, 233, 240, 0.06);
+  box-shadow: inset 0 0 0 1px rgba(232, 233, 240, 0.1);
+  transition: background 200ms ease, box-shadow 200ms ease, color 200ms ease;
+}
+.chip:hover {
+  color: var(--screen);
+  background: rgba(108, 242, 255, 0.08);
+  box-shadow: inset 0 0 0 1px rgba(108, 242, 255, 0.35);
+}
+
+.nav-pill {
+  border-radius: 999px;
+  padding: 4px;
+  background: rgba(14, 16, 26, 0.5);
+  -webkit-backdrop-filter: blur(14px) saturate(150%);
+  backdrop-filter: blur(14px) saturate(150%);
+  box-shadow:
+    inset 0 0 0 1px rgba(232, 233, 240, 0.1),
+    inset 0 1px 0 rgba(232, 233, 240, 0.08),
+    0 12px 32px -18px rgba(4, 6, 14, 0.9);
+}
+@keyframes nav-glow-in {
+  from { opacity: 0; transform: scale(0.82); }
+  to { opacity: 1; transform: scale(1); }
+}
+.nav-pill-glow {
+  animation: nav-glow-in 420ms cubic-bezier(0.34, 1.56, 0.64, 1) both; /* spring-like overshoot */
+  background: var(--ink);
+  box-shadow: 0 0 24px -4px rgba(108, 242, 255, 0.45);
+}
+
+/* Buttons: full pill. Solid = ink on void text (primary). Glass = ink text on glass (secondary). */
+.btn-pill {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  overflow: hidden;
+  border-radius: 999px;
+  padding: 0.8rem 1.35rem;
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 12px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  transition:
+    background 300ms cubic-bezier(0.16, 1, 0.3, 1),
+    color 300ms cubic-bezier(0.16, 1, 0.3, 1),
+    box-shadow 300ms ease,
+    transform 150ms ease;
+}
+.btn-pill:active {
+  transform: scale(0.97);
+}
+.btn-solid {
+  background: var(--ink);
+  color: var(--void);
+  box-shadow: 0 10px 30px -12px rgba(108, 242, 255, 0.5);
+}
+.btn-solid:hover {
+  background: #ffffff;
+  box-shadow: 0 12px 36px -10px rgba(108, 242, 255, 0.7);
+}
+.btn-glass {
+  color: var(--ink);
+  background: rgba(14, 16, 26, 0.5);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  box-shadow: inset 0 0 0 1px rgba(232, 233, 240, 0.18);
+}
+.btn-glass:hover {
+  background: var(--ink);
+  color: var(--void);
+  box-shadow: inset 0 0 0 1px var(--ink);
+}
+.btn-arrow {
+  display: inline-flex;
+  transition: transform 300ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+.btn-pill:hover .btn-arrow {
+  transform: translateX(3px);
+}
+/* Magic UI shimmer: a soft highlight sweeps across the solid pill */
+@keyframes shimmer-sweep {
+  0% { transform: translateX(-120%) skewX(-18deg); }
+  60%, 100% { transform: translateX(220%) skewX(-18deg); }
+}
+.btn-shimmer {
+  position: absolute;
+  inset: 0;
+  width: 45%;
+  background: linear-gradient(90deg, transparent, rgba(108, 242, 255, 0.45), transparent);
+  animation: shimmer-sweep 3.2s cubic-bezier(0.6, 0, 0.3, 1) infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .btn-shimmer { display: none; }
+}
+
+/* Keyboard focus: one visible style everywhere */
+:focus-visible {
+  outline: 1.5px solid var(--screen);
+  outline-offset: 3px;
+  border-radius: 2px;
+}
+
+/* Skip link for keyboard users */
+.skip-link {
+  position: fixed;
+  left: 1.25rem;
+  top: 1.25rem;
+  z-index: 60;
+  padding: 0.5rem 0.75rem;
+  background: var(--void);
+  border: 1px solid var(--line);
+  transform: translateY(-200%);
+  transition: transform 200ms ease;
+}
+.skip-link:focus-visible {
+  transform: none;
+}
+
+/* Film grain: one fixed composited layer, never on scrolling content */
+.grain {
+  position: fixed;
+  inset: 0;
+  z-index: 5;
+  pointer-events: none;
+  opacity: 0.045;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 1 0'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size: 200px 200px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    transition-duration: 0.001ms !important;
+  }
+}
+
+/* igloo caption exit. As a block scrolls off, its captions barely move (a counter-translate holds
+   them, net drift ~10svh), then dissolve bottom-up: a mask edge sweeps upward while the text blurs,
+   smears into a red/cyan fringe and fades. Driven by the block's own view() timeline (exit range),
+   so the hero and its loop clone are untouched at the seam (--dz = 0 whenever the top is in view).
+   Stagger with --dz-to (percent of the exit range); keep --dz-hold = 0.8 x that scroll distance so
+   every caption is held from the first pixel. */
+@property --dz {
+  syntax: "<number>";
+  inherits: true;
+  initial-value: 0;
+}
+@keyframes dissolve {
+  from { --dz: 0; }
+  to { --dz: 1; }
+}
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .dissolve {
+      animation: dissolve linear both;
+      animation-timeline: var(--dz-scope, view());
+      animation-range: exit 0% exit var(--dz-to, 50%);
+      transform: translateY(calc(var(--dz) * var(--dz-hold, 40svh)));
+      opacity: calc(1 - var(--dz) * var(--dz));
+      filter: blur(calc(var(--dz) * 6px));
+      -webkit-mask-image: linear-gradient(to top, transparent calc(var(--dz) * 160% - 60%), #000 calc(var(--dz) * 160% - 10%));
+      mask-image: linear-gradient(to top, transparent calc(var(--dz) * 160% - 60%), #000 calc(var(--dz) * 160% - 10%));
+    }
+    .dissolve,
+    .dissolve * {
+      text-shadow:
+        calc(var(--dz) * -11px) 0 2px rgba(255, 96, 150, calc(var(--dz) * 0.75)),
+        calc(var(--dz) * 11px) 0 2px rgba(96, 226, 255, calc(var(--dz) * 0.75)),
+        0 1px 14px rgba(10, 11, 16, 0.9);
+    }
+  }
+}
+/* the timeline belongs to the block, the effect to each caption inside it */
+.dz-scope {
+  view-timeline-name: --dz-block;
+}
+.dz-scope .dissolve {
+  --dz-scope: --dz-block;
+}
+
+/* Caption entry, the mirror of the dissolve: as its block scrolls in, each caption slides up out of
+   a mask that opens bottom-up, with a brief red/cyan fringe that settles. Put .reveal on the captions
+   INSIDE a .dissolve block (never on the same element) and stagger with --i. Scroll-driven only:
+   without support or under reduced motion the rules never apply and the text is simply there.
+   At the top of the page (hero, and its loop clone when fully in view) the range is complete, so
+   both copies render identically at the seam. */
+@property --rv {
+  syntax: "<number>";
+  inherits: true;
+  initial-value: 1;
+}
+@property --rvf {
+  syntax: "<number>";
+  inherits: true;
+  initial-value: 0;
+}
+@keyframes reveal {
+  0% { --rv: 0; --rvf: 1; }
+  100% { --rv: 1; --rvf: 0; }
+}
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .reveal {
+      animation: reveal var(--ease-sine-out) both;
+      animation-timeline: var(--rv-scope, view());
+      animation-range: entry calc(10% + var(--i, 0) * 4%) cover calc(30% + var(--i, 0) * 4%);
+      translate: 0 calc((1 - var(--rv)) * 0.6em);
+      -webkit-mask-image: linear-gradient(to top, #000 calc(var(--rv) * 160% - 60%), transparent calc(var(--rv) * 160% - 10%));
+      mask-image: linear-gradient(to top, #000 calc(var(--rv) * 160% - 60%), transparent calc(var(--rv) * 160% - 10%));
+    }
+    .reveal,
+    .reveal *,
+    .dissolve .reveal,
+    .dissolve .reveal * {
+      text-shadow:
+        calc(var(--dz, 0) * -11px + var(--rvf) * -6px) 0 2px rgba(255, 96, 150, calc(var(--dz, 0) * 0.75 + var(--rvf) * 0.6)),
+        calc(var(--dz, 0) * 11px + var(--rvf) * 6px) 0 2px rgba(96, 226, 255, calc(var(--dz, 0) * 0.75 + var(--rvf) * 0.6)),
+        0 1px 14px rgba(10, 11, 16, 0.9);
+    }
+  }
+}
+.dz-scope .reveal {
+  --rv-scope: --dz-block;
+}
+/* a scrambling char never shows the halo of the (transparent) final letter under its glyph */
+.sc-c.sc-c[data-g],
+.lm.lm.lm {
+  text-shadow: none;
+}
+
+/* Loading screen (hud/IntroLoader.tsx): the page is scroll-locked under it until everything has
+   loaded. Phones have no loading screen; without JS a <noscript> rule in the layout lifts it. */
+html[data-loading] {
+  overflow: hidden;
+  @variant phone {
+    overflow: visible;
+  }
+}
+
+/* Intro: the page is hidden and scroll-locked while the camera lands */
+html[data-intro="playing"] {
+  overflow: hidden;
+}
+html[data-intro="playing"] #loop-root,
+html[data-intro="playing"] [data-hud] {
+  opacity: 0;
+}
+/* the page cross-fades in under the name overlay (IntroLoader) as the intro ends */
+#loop-root {
+  transition: opacity var(--dur-veil) var(--ease-hard);
+}
+[data-hud] {
+  transition: opacity 900ms var(--ease-soft);
+}
+
+/* Intro name overlay (hud/IntroLoader.tsx): letters over the real H1, cross-fading onto it */
+.intro-name {
+  position: fixed;
+  z-index: 30;
+  pointer-events: none;
+  margin: 0;
+  transition: opacity var(--dur-veil) var(--ease-hard);
+}
+.intro-name[data-out] {
+  opacity: 0;
+}
+
+/* ---- HUD boot (after the intro): module by module, --boot-i staggers by --dur-boot-step ----
+   1. a bracket frame draws (clip-path), 2. labels type on (stepped mask + block caret),
+   3. values scramble (Scramble boot prop). Only runs while html[data-boot="run"]; the DOM is
+   always there (SSR), only visuals are delayed. */
+@property --tp {
+  syntax: "<number>";
+  inherits: true;
+  initial-value: 1;
+}
+.boot-frame {
+  position: absolute;
+  inset: -8px -10px;
+  pointer-events: none;
+  opacity: 0;
+  --bc: var(--screen);
+  background:
+    linear-gradient(var(--bc), var(--bc)) left top / 7px 1px no-repeat,
+    linear-gradient(var(--bc), var(--bc)) left top / 1px 7px no-repeat,
+    linear-gradient(var(--bc), var(--bc)) right top / 7px 1px no-repeat,
+    linear-gradient(var(--bc), var(--bc)) right top / 1px 7px no-repeat,
+    linear-gradient(var(--bc), var(--bc)) left bottom / 7px 1px no-repeat,
+    linear-gradient(var(--bc), var(--bc)) left bottom / 1px 7px no-repeat,
+    linear-gradient(var(--bc), var(--bc)) right bottom / 7px 1px no-repeat,
+    linear-gradient(var(--bc), var(--bc)) right bottom / 1px 7px no-repeat;
+}
+@keyframes boot-frame {
+  0% { opacity: 1; clip-path: inset(0 100% 100% 0); }
+  40% { opacity: 1; clip-path: inset(0); }
+  70% { opacity: 1; clip-path: inset(0); }
+  100% { opacity: 0; clip-path: inset(0); }
+}
+@keyframes boot-type {
+  from { --tp: 0; }
+  to { --tp: 1; }
+}
+@keyframes boot-caret {
+  0%, 90% { opacity: 0.85; }
+  100% { opacity: 0; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  html[data-boot="run"] [data-boot] .boot-frame {
+    animation: boot-frame var(--dur-boot) var(--ease-hard) calc(var(--boot-i, 0) * var(--dur-boot-step)) both;
+  }
+  html[data-boot="run"] [data-boot] [data-boot-type] {
+    position: relative;
+    animation: boot-type calc(var(--dur-boot) * 0.6) steps(var(--n, 12)) calc(var(--boot-i, 0) * var(--dur-boot-step) + 120ms) both;
+    -webkit-mask-image: linear-gradient(to right, #000 calc(var(--tp) * 100%), transparent 0);
+    mask-image: linear-gradient(to right, #000 calc(var(--tp) * 100%), transparent 0);
+  }
+  html[data-boot="run"] [data-boot] [data-boot-type]::after {
+    content: "";
+    position: absolute;
+    top: 0.1em;
+    bottom: 0.1em;
+    left: calc(var(--tp) * 100% - 0.62em);
+    width: 0.62em;
+    background: var(--screen);
+    animation: boot-caret calc(var(--dur-boot) * 0.6 + 160ms) steps(1) calc(var(--boot-i, 0) * var(--dur-boot-step) + 120ms) both;
+  }
+}
+
+/* Monogram (hud/Monogram.tsx): '[NA]' that opens into the handle on hover / keyboard focus */
+.monogram-word {
+  display: inline-block;
+  max-width: 0;
+  overflow: clip;
+  white-space: nowrap;
+  opacity: 0;
+  transition:
+    max-width var(--dur-veil) var(--ease-hard),
+    opacity var(--dur-veil) var(--ease-hard);
+}
+.monogram:hover .monogram-word,
+.monogram:focus-visible .monogram-word {
+  max-width: 12ch;
+  opacity: 1;
+}
+/* phones: the nav pill sits top-right and the open handle would run into it; keep the mark closed */
+@media (max-width: 639px) {
+  .monogram:hover .monogram-word,
+  .monogram:focus-visible .monogram-word {
+    max-width: 0;
+    opacity: 0;
+  }
+}
+
+/* Velocity is power: display type leans with scroll speed (loop mode only, never at rest:
+   --vel defaults to 0). The widening is a transform, not letter-spacing, so nothing reflows. */
+@media (prefers-reduced-motion: no-preference) {
+  html[data-loop="loop"] .display {
+    transform: skewY(calc(var(--vel, 0) * 2deg)) scaleX(calc(1 + var(--vel-abs) * 0.03));
+    will-change: transform;
+  }
+}
+
+/* Next project (projects/[slug]/NextProject.tsx): a hairline fills as the block scrolls in */
+.next-fill {
+  position: relative;
+  height: 1px;
+  overflow: clip;
+  background: var(--line);
+  view-timeline-name: --next-fill;
+}
+.next-fill::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: var(--accent);
+  transform-origin: left;
+}
+@keyframes fill-x {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .next-fill::after {
+      animation: fill-x linear both;
+      animation-timeline: --next-fill;
+      animation-range: entry 0% cover 55%;
+    }
+  }
+}
+
+/* No-WebGL / pre-warm backdrop (fallback/WorldFallback.tsx): the lap's moods stacked vertically,
+   slid with the page scroll so each station sits on its own colour (and the seam wraps to hero) */
+@keyframes mood-slide {
+  from { transform: translateY(0); }
+  to { transform: translateY(-80%); }
+}
+@supports (animation-timeline: scroll()) {
+  .fallback-moods {
+    animation: mood-slide linear both;
+    animation-timeline: scroll(root);
+  }
+}
+
+/* typing caret (anchored labels) */
+@keyframes caret-blink {
+  0%, 49% { opacity: 1; }
+  50%, 100% { opacity: 0; }
+}
+.caret {
+  display: inline-block;
+  width: 0.55em;
+  height: 1em;
+  margin-left: 1px;
+  vertical-align: -0.12em;
+  background: var(--screen);
+  animation: caret-blink 700ms steps(1) infinite;
+}
+
+/* Custom crosshair cursor on fine pointers */
+html[data-cursor="on"],
+html[data-cursor="on"] a,
+html[data-cursor="on"] button,
+html[data-cursor="on"] label,
+html[data-cursor="on"] [role="button"],
+html[data-cursor="on"] [data-cursor] {
+  cursor: none;
+}
+
+/* Anchored 3D labels */
+.label3d {
+  position: absolute;
+  left: 0;
+  top: 0;
+  will-change: transform;
+  transition: opacity 250ms ease;
+}
+
+@keyframes pulse {
+  from { transform: scaleY(0.4); }
+  to { transform: scaleY(1); }
+}
+
+@keyframes iconIn {
+  from { opacity: 0; transform: translateY(6px) scale(0.8); filter: blur(2px); }
+  to { opacity: 1; transform: none; filter: none; }
+}
+
+/* ---- View transitions (home <-> /projects/[slug]) ----
+   React's <ViewTransition> sets the classes: 'vt-page' fades the detail page content in/out
+   (the home page stays mounted across the navigation, so it rides the root crossfade),
+   'vt-title' morphs a project title into the detail H1 with a brief blur to hide the raster
+   scaling. The root crossfade is short: the canvas in the new state keeps rendering live. */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: 260ms;
+  animation-timing-function: var(--ease-soft);
+}
+::view-transition-old(.vt-page) {
+  animation: vt-out 220ms var(--ease-soft) both;
+}
+::view-transition-new(.vt-page) {
+  animation: vt-in 380ms var(--ease-soft) 80ms both;
+}
+::view-transition-group(.vt-title) {
+  animation-duration: 520ms;
+  animation-timing-function: var(--ease-hard);
+}
+::view-transition-image-pair(.vt-title) {
+  animation-name: vt-blur;
+}
+@keyframes vt-out {
+  to { opacity: 0; }
+}
+@keyframes vt-in {
+  from { opacity: 0; }
+}
+@keyframes vt-blur {
+  40% { filter: blur(3px); }
+}
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*),
+  ::view-transition-image-pair(*) {
+    animation: none !important;
+  }
+}
+
+/* ---- Phone tokens (only inside the phone gate) ---- */
+@media (pointer: coarse) and (max-width: 767px), (pointer: coarse) and (max-height: 500px) {
+  :root {
+    --dock-h: 56px;
+    --dock-gap: max(12px, calc(env(safe-area-inset-bottom, 0px) + 6px));
+    --dock-reserve: calc(var(--dock-h) + var(--dock-gap) + 16px);
+    --rail-w: 0px;
+    --rail-reserve: 0px;
+    --gutter: 20px;
+    --top-zone: calc(env(safe-area-inset-top, 0px) + 64px);
+    --surface: rgba(14, 16, 26, 0.88);
+    --surface-line: inset 0 0 0 1px rgba(232, 233, 240, 0.1);
+    --surface-shadow: 0 12px 32px -18px rgba(4, 6, 14, 0.9);
+    --sheet: rgba(10, 11, 16, 0.97);
+    --dur-develop: 1200ms;
+    --dur-dock-in: 420ms;
+    --dur-dock-out: 240ms;
+    --dur-sheet-in: 320ms;
+    --dur-sheet-out: 200ms;
+    --dur-jump-in: 150ms;
+    --dur-jump-out: 220ms;
+    --dur-press: 90ms;
+  }
+}
+@media (pointer: coarse) and (max-height: 500px) and (orientation: landscape) {
+  :root {
+    /* no Dock at the bottom here, but resting content still clears the home indicator (iPhone: 21 px) */
+    --dock-reserve: max(16px, calc(env(safe-area-inset-bottom, 0px) + 8px));
+    --rail-w: 64px;
+    --rail-reserve: calc(var(--rail-w) + max(12px, env(safe-area-inset-right, 0px)) + 12px);
+    --gutter: max(20px, env(safe-area-inset-left, 0px));
+  }
+}

@@ -1,0 +1,31 @@
+import { createRequire } from "node:module";
+const require = createRequire("/Users/nazarakanov/development/dossier/package.json");
+const { chromium } = require("playwright");
+const out = "/Users/nazarakanov/development/dossier/reference/shots/round1";
+const browser = await chromium.launch();
+const errors = [];
+const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 }, reducedMotion: "reduce" });
+const page = await ctx.newPage();
+page.on("console", (m) => { if (["error", "warning"].includes(m.type())) errors.push(m.text()); });
+page.on("pageerror", (e) => errors.push(e.message));
+await page.goto("http://localhost:3240/", { waitUntil: "networkidle" });
+await page.waitForTimeout(800);
+await page.screenshot({ path: `${out}/reduced-intro.png` });
+await page.evaluate(() => document.getElementById("title").scrollIntoView());
+await page.waitForTimeout(600);
+await page.screenshot({ path: `${out}/reduced-title.png` });
+const h = await page.evaluate(() => document.documentElement.scrollHeight / innerHeight);
+console.log("scroll length (viewports):", h.toFixed(2));
+// sound toggle
+await page.click("button[aria-pressed]");
+console.log("sound after click:", await page.textContent("button[aria-pressed]"));
+await ctx.close();
+// desktop: title with streaks
+const c2 = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+const p2 = await c2.newPage();
+await p2.goto("http://localhost:3240/", { waitUntil: "networkidle" });
+await p2.evaluate(() => window.scrollTo(0, 900 * 1.9));
+await p2.waitForTimeout(2300);
+await p2.screenshot({ path: `${out}/desktop-title.png` });
+await browser.close();
+console.log(errors.length ? errors.join("\n") : "no console errors");

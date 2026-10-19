@@ -1,0 +1,49 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><style>
+body{margin:0;background:#000;display:flex;gap:0}
+canvas{display:block}
+</style></head><body>
+<script>
+/* Procedural feathered ink/fur burst. Draws white bristle strokes radiating from (cx,cy) on a transparent canvas.
+   Use the canvas directly (drawImage / CSS background), or canvas.toDataURL() as a CSS mask-image (burst-as-window),
+   or invert by drawing it with globalCompositeOperation='difference' / CSS filter:invert(1). */
+function rng(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+function burst(cv,{seed=3,cx=.52,cy=.95,radius=.62,strokes=3200,lobes=7}={}){
+  const R=rng(seed),ctx=cv.getContext('2d'),W=cv.width,H=cv.height,S=Math.min(W,H)*1.0;
+  ctx.clearRect(0,0,W,H);
+  // radial envelope: a few big "flame" lobes (low-freq) + jitter (high-freq)
+  const ph=[...Array(lobes)].map(()=>R()*6.28), amp=[...Array(lobes)].map(()=>.1+R()*.35);
+  const env=a=>{let e=1;for(let k=0;k<lobes;k++)e+=amp[k]*Math.pow(Math.max(0,Math.cos(a*(k%3+2)+ph[k])),6);return e};
+  // 1) solid body that follows the lobed envelope, softened
+  ctx.filter=`blur(${(S/45).toFixed(1)}px)`;ctx.fillStyle='rgb(236,236,236)';ctx.beginPath();
+  for(let i=0;i<=360;i++){const a=i/360*Math.PI*2,r=radius*S*env(a)*.8;ctx.lineTo(cx*W+Math.cos(a)*r,cy*H+Math.sin(a)*r)}ctx.fill();
+  // 2) feathered fringe: many short wide low-alpha bristles crossing the envelope edge
+  ctx.filter=`blur(${(S/700).toFixed(2)}px)`;ctx.lineCap='round';
+  for(let i=0;i<strokes;i++){
+    const a=R()*Math.PI*2, e=env(a)*radius*S;
+    const r0=e*(.45+R()*.35), r1=e*(.82+R()*.2)*(R()<.05?1.12:1);
+    const curl=(R()-.5)*.06;
+    const x0=cx*W+Math.cos(a)*r0, y0=cy*H+Math.sin(a)*r0;
+    const x1=cx*W+Math.cos(a+curl)*r1, y1=cy*H+Math.sin(a+curl)*r1;
+    const steps=5;
+    for(let s=0;s<steps;s++){const t0=s/steps,t1=(s+1)/steps;
+      ctx.strokeStyle=`rgba(236,236,236,${(.35*(1-t0*.85)*(.4+R()*.6)).toFixed(3)})`;
+      ctx.lineWidth=(3+R()*7)*(1-t0*.7)*(S/700);
+      ctx.beginPath();ctx.moveTo(x0+(x1-x0)*t0,y0+(y1-y0)*t0);ctx.lineTo(x0+(x1-x0)*t1,y0+(y1-y0)*t1);ctx.stroke();}
+  }
+  // 2b) faint darker brush streaks inside the body (dry-brush texture)
+  ctx.globalCompositeOperation='source-atop';
+  for(let i=0;i<500;i++){const a=R()*6.28,e=env(a)*radius*S,r0=e*(.3+R()*.5),r1=r0+e*(.1+R()*.25);
+    ctx.strokeStyle=`rgba(90,90,90,${(.04+R()*.08).toFixed(3)})`;ctx.lineWidth=(1+R()*3)*(S/700);ctx.beginPath();
+    ctx.moveTo(cx*W+Math.cos(a)*r0,cy*H+Math.sin(a)*r0);ctx.lineTo(cx*W+Math.cos(a)*r1,cy*H+Math.sin(a)*r1);ctx.stroke();}
+  ctx.globalCompositeOperation='source-over';
+  ctx.filter='none';
+  // 3) dry-brush specks: punch tiny dark holes
+  ctx.globalCompositeOperation='destination-out';
+  for(let i=0;i<180;i++){const a=R()*6.28,r=radius*S*(.3+R()*.8);ctx.fillStyle=`rgba(0,0,0,${(.2+R()*.5).toFixed(2)})`;
+    ctx.fillRect(cx*W+Math.cos(a)*r,cy*H+Math.sin(a)*r,1+R()*2,1+R()*1.5);}
+  ctx.globalCompositeOperation='source-over';
+  return cv;
+}
+for(const [sd,cy] of [[3,1.0],[11,.95]]){const c=document.createElement('canvas');c.width=640;c.height=480;document.body.appendChild(c);burst(c,{seed:sd,cy,radius:.5});c.style.filter='blur(.6px)';}
+</script></body></html>

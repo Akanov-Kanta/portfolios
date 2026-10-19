@@ -1,0 +1,833 @@
+/* phone-stations.css: phone-only styles owned by Lane C. Every rule sits inside one of the three gates, copied verbatim from src/components/world/phone.ts (PHONE_MQ / PHONE_LAND_MQ / PHONE_APP_MQ); top-level @keyframes are named ph-*. Enforced by phone.test.ts. Plain CSS only (no Tailwind directives). */
+
+/* Stations on phones: type scale, caption-lite, solid surfaces, touch feedback, and the section layouts
+   (portrait here, phone-land below), keyed on the st-* class hooks and data-* attributes in
+   components/home/* and app/projects/[slug]/*. Unlayered, so these beat the Tailwind utilities on the
+   same elements; nothing here can match a desktop, a touch laptop or a tablet. */
+@media (pointer: coarse) and (max-width: 767px), (pointer: coarse) and (max-height: 500px) {
+  /* ---- type scale (floor: no visible text under 12 px) ---- */
+  .label {
+    font-size: 12px;
+    letter-spacing: 0.08em;
+  }
+  .marker {
+    font-size: 13px;
+  }
+  /* display-xl: the hero name, always two lines at 360-440 px */
+  .st-hero-title {
+    font-size: clamp(3.5rem, 16.5vw, 4.5rem);
+    line-height: 0.92;
+    letter-spacing: -0.04em;
+  }
+  /* the particle name on its own layer: the hero and its loop clone then raster the same dots at the
+     seam (without it the clone's name resampled differently: P13) */
+  .pt-canvas {
+    will-change: transform;
+  }
+  /* display-l: project titles, 'Let's talk.', the detail H1 */
+  .st-display-l,
+  .st-next-title {
+    font-size: 3rem;
+    line-height: 0.95;
+  }
+  .st-about-bio {
+    font-size: 1.25rem;
+    line-height: 1.3;
+    letter-spacing: -0.015em;
+    max-width: 34ch;
+  }
+  .st-tagline {
+    font-size: 1.125rem;
+    line-height: 1.35;
+  }
+  .st-detail-desc {
+    font-size: 1rem;
+    line-height: 1.55;
+    max-width: 36ch;
+  }
+
+  /* ---- caption-lite: the same view() timelines and ranges, compositor-only properties.
+     The desktop keyframes animate --dz / --rv / --rvf (registered, so every frame restyles the text,
+     its blur, mask and fringe); here only opacity + transform / translate move. ---- */
+  @supports (animation-timeline: view()) {
+    @media (prefers-reduced-motion: no-preference) {
+      .dissolve {
+        animation-name: ph-dz;
+        filter: none;
+        -webkit-mask-image: none;
+        mask-image: none;
+      }
+      .reveal {
+        animation-name: ph-rv;
+        -webkit-mask-image: none;
+        mask-image: none;
+      }
+      /* the fringe halos are zero at rest and --dz / --rvf never move here: keep only the legibility shadow */
+      .dissolve,
+      .dissolve *,
+      .reveal,
+      .reveal * {
+        text-shadow: 0 1px 14px rgba(10, 11, 16, 0.9);
+      }
+      /* no per-word scrub: each paragraph fades up as it enters */
+      .scrub-word {
+        animation: none;
+      }
+      .scrub {
+        animation: ph-rv var(--ease-sine-out) both;
+        animation-timeline: view();
+        animation-range: entry 10% cover 30%;
+      }
+    }
+  }
+
+  /* ---- surfaces: solid, never a backdrop blur ---- */
+  .spot-card,
+  .btn-glass,
+  .nav-pill {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    background: var(--surface);
+  }
+  .spot-card {
+    box-shadow: var(--surface-line), var(--surface-shadow);
+  }
+  .spot-card::before {
+    content: none;
+  }
+
+  /* ---- hover neutralised to the resting look (a tap leaves :hover stuck on touch screens);
+     keyboard :focus-visible keeps its states ---- */
+  .link-mono:hover:not(:focus-visible) {
+    color: inherit;
+    border-color: rgba(232, 233, 240, 0.45);
+  }
+  .link-mono.link-quiet:hover:not(:focus-visible) {
+    border-color: transparent;
+  }
+  .link-mono.marker-muted:hover:not(:focus-visible) {
+    color: var(--muted);
+  }
+  .link-mono:hover:not(:focus-visible)::before,
+  .link-mono:hover:not(:focus-visible)::after {
+    opacity: 0;
+  }
+  .link-mono:hover:not(:focus-visible)::before {
+    transform: translateX(0.6em);
+  }
+  .link-mono:hover:not(:focus-visible)::after {
+    transform: translateX(-0.6em);
+  }
+  .link-mono:hover:not(:focus-visible) .lm::before,
+  .link-mono:hover:not(:focus-visible) .lm::after,
+  .roll:hover:not(:focus-visible) .lm::before,
+  .roll:hover:not(:focus-visible) .lm::after {
+    transform: none;
+  }
+  .roll:hover:not(:focus-visible) .icon-roll > :first-child {
+    transform: none;
+  }
+  .roll:hover:not(:focus-visible) .icon-roll > :last-child {
+    transform: translateX(calc(-100% * var(--dir, 1)));
+  }
+  .chip:hover {
+    color: inherit;
+    background: rgba(232, 233, 240, 0.06);
+    box-shadow: inset 0 0 0 1px rgba(232, 233, 240, 0.1);
+  }
+  .btn-solid:hover {
+    background: var(--ink);
+    box-shadow: 0 10px 30px -12px rgba(108, 242, 255, 0.5);
+  }
+  .btn-glass:hover {
+    color: var(--ink);
+    background: var(--surface);
+    box-shadow: inset 0 0 0 1px rgba(232, 233, 240, 0.18);
+  }
+  .btn-pill:hover .btn-arrow {
+    transform: none;
+  }
+  /* the Email pill's shimmer: one sweep, then it holds past the pill's clipped edge (OrbStage replays it
+     each time the contact stage comes into view). An endless sweep cost a style recalc every frame at
+     rest, on every station, and a second sweep still ran 4.5-6.4 s after arriving at contact (P7). */
+  .btn-shimmer {
+    animation-iteration-count: 1;
+    animation-fill-mode: forwards;
+  }
+
+  /* ---- touch: 48 px pills, 44 px chips, no grey tap flash, press feedback ---- */
+  .btn-pill,
+  .st-pill,
+  .st-chip,
+  .st-copy,
+  .st-proj-slot,
+  [data-social-grid] a {
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
+  }
+  .link-mono,
+  .st-next-title {
+    -webkit-tap-highlight-color: transparent;
+  }
+  .btn-pill {
+    min-height: 48px;
+    transition: transform var(--dur-press) var(--ease-hard);
+  }
+  .btn-pill:active,
+  .st-pill:active {
+    transform: scale(0.97);
+  }
+  .st-chip:active,
+  .st-copy:active,
+  [data-social-grid] a:active {
+    opacity: 0.7;
+    transform: none;
+  }
+  /* a 44 px chip (detail back link and project index) */
+  .st-chip {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-width: 44px;
+    min-height: 44px;
+    padding: 0 14px;
+    border-bottom: 0;
+    border-radius: 12px;
+    background: var(--surface);
+    box-shadow: var(--surface-line);
+    transition: opacity 80ms linear;
+  }
+  /* a 48 px pill (detail Visit site / Source) */
+  .st-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    min-height: 48px;
+    padding: 0 20px;
+    border-bottom: 0;
+    border-radius: 999px;
+    background: var(--surface);
+    box-shadow: inset 0 0 0 1px rgba(232, 233, 240, 0.18);
+    transition: transform var(--dur-press) var(--ease-hard);
+  }
+  /* chips and pills carry their own shape: no '[ ]' brackets */
+  .st-chip.link-mono::before,
+  .st-chip.link-mono::after,
+  .st-pill.link-mono::before,
+  .st-pill.link-mono::after {
+    content: none;
+  }
+
+  /* ---- hero: the name R + 24 px above the visible bottom over a full-width bottom scrim.
+     The section is 100lvh: (100lvh - 100svh) is the part a browser toolbar covers. ---- */
+  [data-hero-scrim] {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: calc(45svh + 100lvh - 100svh);
+    pointer-events: none;
+    background: linear-gradient(
+      to top,
+      rgba(10, 11, 16, 0.85) calc(100lvh - 100svh),
+      rgba(10, 11, 16, 0.5) calc(100lvh - 100svh + 20svh),
+      rgba(10, 11, 16, 0) 100%
+    );
+  }
+  .scrim-corner {
+    background: none;
+  }
+  .st-hero-name {
+    left: var(--gutter);
+    right: max(var(--gutter), var(--rail-reserve));
+    bottom: calc(100lvh - 100svh + var(--dock-reserve) + 24px);
+  }
+  /* the manifesto crosses the lamp-lit door frame on short screens (SE, landscape): a tight local scrim
+     under the block and a crisp halo on the glyphs keep 12-13 px mono at 4.5:1 or better. The clone
+     carries the same classes, so the seam stays identical. */
+  .st-hero-manifesto {
+    isolation: isolate;
+  }
+  .st-hero-manifesto::before {
+    content: "";
+    position: absolute;
+    inset: -4px -8px;
+    z-index: -1;
+    border-radius: 16px;
+    background: rgba(10, 11, 16, 0.6);
+    box-shadow: 0 0 28px 14px rgba(10, 11, 16, 0.6);
+    pointer-events: none;
+  }
+  .st-hero-manifesto .reveal,
+  .st-hero-manifesto .reveal *,
+  .st-hero-name > .label {
+    text-shadow:
+      0 0 3px rgba(10, 11, 16, 0.9),
+      0 1px 14px rgba(10, 11, 16, 0.9);
+  }
+  /* the muted role label sits high in (portrait: the lamp-lit rug) or above (landscape: the doorway) the
+     bottom scrim: its own tight scrim */
+  .st-hero-name > .label {
+    position: relative;
+    isolation: isolate;
+    width: fit-content;
+  }
+  .st-hero-name > .label::after {
+    content: "";
+    position: absolute;
+    inset: -2px -6px;
+    z-index: -1;
+    border-radius: 8px;
+    background: rgba(10, 11, 16, 0.8);
+    box-shadow: 0 0 16px 8px rgba(10, 11, 16, 0.8);
+    pointer-events: none;
+  }
+
+  /* ---- about: one column of solid cards, the bottom clears the Dock ---- */
+  .st-about {
+    padding: calc(var(--top-zone) + 32px) max(var(--gutter), var(--rail-reserve)) var(--dock-reserve) var(--gutter);
+  }
+  .st-about-bento {
+    grid-template-columns: minmax(0, 1fr);
+    margin-top: 32px;
+  }
+  .st-about-bento > * {
+    grid-column: auto;
+  }
+
+  /* ---- projects: device slot on top (top zone → 46svh), caption at the bottom above the Dock.
+     Exactly 100svh per stop: the camera's device index is viewports scrolled into the segment. ---- */
+  .st-proj {
+    height: 100svh;
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: flex-end;
+  }
+  .st-proj-slot {
+    position: absolute;
+    top: var(--top-zone);
+    left: var(--gutter);
+    right: max(var(--gutter), var(--rail-reserve));
+    height: calc(46svh - var(--top-zone));
+    align-items: center;
+    justify-content: center;
+    container-type: size;
+  }
+  .st-proj-caption {
+    padding: 56px max(var(--gutter), var(--rail-reserve)) var(--dock-reserve) var(--gutter);
+    text-align: left;
+    background: linear-gradient(to top, rgba(10, 11, 16, 0.86) 0%, rgba(10, 11, 16, 0.7) 55%, rgba(10, 11, 16, 0) 100%);
+  }
+  .st-proj-card,
+  .st-proj-tags,
+  .st-proj-card .accent-rule {
+    margin-left: 0;
+  }
+  .st-proj-card {
+    max-width: none;
+  }
+  .st-proj-card .st-tagline {
+    margin-top: 16px;
+  }
+  .st-proj-cta {
+    margin-top: 24px;
+  }
+  /* the last stop looks down the portal at the orb and its rings, right behind the caption: here the scrim
+     reaches its strength within the caption's top padding, so the 12 px marker keeps 4.5:1 over them */
+  @media (orientation: portrait) {
+    .st-proj:last-of-type > .st-proj-caption {
+      background: linear-gradient(to bottom, rgba(10, 11, 16, 0) 0, rgba(10, 11, 16, 0.78) 48px, rgba(10, 11, 16, 0.8) 60%, rgba(10, 11, 16, 0.88) 100%);
+    }
+  }
+
+  /* ---- DeviceCard: the device's DOM stand-in, sized to 80 % of its slot at 16:10 ---- */
+  [data-device-card] {
+    position: relative;
+    display: block;
+    width: 80%;
+    width: min(80cqw, 80cqh * 1.6);
+    aspect-ratio: 16 / 10;
+    overflow: hidden;
+    border-radius: 10px;
+    background: #0d0f18;
+    box-shadow:
+      inset 0 0 0 1px rgba(232, 233, 240, 0.22),
+      0 18px 48px -28px var(--accent);
+    transition: opacity var(--dur-veil) var(--ease-hard);
+  }
+  html[data-world-ready] [data-device-card] {
+    opacity: 0;
+  }
+  [data-device-screen] {
+    position: absolute;
+    inset: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    border-radius: 6px;
+    background: #090a10 center / cover no-repeat;
+    box-shadow: inset 0 0 0 1px rgba(232, 233, 240, 0.08);
+  }
+  [data-device-screen]::before {
+    content: "";
+    position: absolute;
+    inset: -10%;
+    background: radial-gradient(closest-side, var(--accent), transparent);
+    opacity: 0.24;
+  }
+  [data-device-screen][style]::before {
+    content: none;
+  }
+  [data-device-name] {
+    position: relative;
+    font-family: var(--font-mono), ui-monospace, monospace;
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    color: var(--ink);
+    text-shadow: 0 1px 14px rgba(10, 11, 16, 0.9);
+  }
+
+  /* ---- contact: a pinned column — heading band, orb slot, 2x2 social grid, install offer ---- */
+  .st-contact {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    padding: calc(var(--top-zone) + 8px) max(var(--gutter), var(--rail-reserve)) var(--dock-reserve) var(--gutter);
+  }
+  /* in flow now, full width: a centred scrim that fades out before the band's edges */
+  .st-contact-band {
+    position: relative;
+    top: auto;
+    left: auto;
+    flex: none;
+    max-width: none;
+    background: radial-gradient(72% 72% at 50% 50%, rgba(10, 11, 16, 0.6), transparent 70%);
+  }
+  .st-contact-status {
+    margin-top: 16px;
+  }
+  .st-contact-row {
+    column-gap: 12px;
+    row-gap: 8px;
+  }
+  .st-contact-avail {
+    margin-top: 12px;
+  }
+  /* the copy action: a 44 px target, the underline moves from the box to the address */
+  .st-copy {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 44px;
+    padding: 0;
+    border-bottom: 0;
+    transition: opacity 80ms linear;
+  }
+  /* the label swaps to 'Copied to clipboard' (19 characters, the longer one): the box is sized for it and
+     the text sits right-aligned against the glyph, so a copy never changes the row's width (no reflow).
+     The visible text is the .lm::before layer (::after on keyboard focus), so the underline goes there
+     and follows the text. */
+  .st-copy .lm {
+    min-width: calc(19ch + 0.4em);
+    padding-bottom: 3px;
+    text-align: right;
+  }
+  .st-copy .lm::before,
+  .st-copy .lm::after {
+    left: auto;
+    right: 0;
+    padding-bottom: 2px;
+    border-bottom: 1px solid rgba(232, 233, 240, 0.45);
+  }
+  /* the copy glyph takes the place of the '[ ]' brackets (doubled class: it outranks the hover reset) */
+  .st-copy.st-copy.link-mono::before {
+    content: none;
+  }
+  .st-copy.st-copy.link-mono::after {
+    content: "";
+    position: static;
+    flex: none;
+    width: 14px;
+    height: 14px;
+    margin: 0;
+    opacity: 1;
+    transform: none;
+    background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='%239096ad' stroke-width='1.3'%3E%3Crect x='5.5' y='5.5' width='8' height='8' rx='1.5'/%3E%3Cpath d='M10.5 3.5v-.5A1.5 1.5 0 0 0 9 1.5H4A1.5 1.5 0 0 0 2.5 3v5A1.5 1.5 0 0 0 4 9.5h.5'/%3E%3C/svg%3E") center / contain no-repeat;
+  }
+  /* the orb slot takes whatever the band and the grid leave (≥ 180 px from 626 px of height up); on a
+     short screen it is the part that gives, never the grid (the camera fits the orb to the slot) */
+  .st-orb {
+    position: relative;
+    flex: 1 1 0;
+    min-height: 0;
+    align-items: center;
+    justify-content: center;
+    touch-action: pan-y pinch-zoom;
+    -webkit-tap-highlight-color: transparent;
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
+  }
+  /* DOM brand icon in corner brackets: before the world is ready and without WebGL */
+  [data-orb-icon] {
+    position: relative;
+    display: block;
+    padding: 22px;
+    color: var(--ink);
+    pointer-events: none;
+    transition: opacity var(--dur-veil) var(--ease-hard);
+  }
+  /* hidden by the attribute that survives route changes (as DeviceCard is): a stage mounted by navigating
+     to contact starts hidden instead of fading out over the live orb; without WebGL neither is set */
+  [data-orb-icon][data-ready],
+  html[data-world-ready] [data-orb-icon] {
+    opacity: 0;
+  }
+  [data-orb-icon]::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    opacity: 0.7;
+    background:
+      linear-gradient(var(--ink), var(--ink)) left top / 14px 1px no-repeat,
+      linear-gradient(var(--ink), var(--ink)) left top / 1px 14px no-repeat,
+      linear-gradient(var(--ink), var(--ink)) right top / 14px 1px no-repeat,
+      linear-gradient(var(--ink), var(--ink)) right top / 1px 14px no-repeat,
+      linear-gradient(var(--ink), var(--ink)) left bottom / 14px 1px no-repeat,
+      linear-gradient(var(--ink), var(--ink)) left bottom / 1px 14px no-repeat,
+      linear-gradient(var(--ink), var(--ink)) right bottom / 14px 1px no-repeat,
+      linear-gradient(var(--ink), var(--ink)) right bottom / 1px 14px no-repeat;
+  }
+  [data-orb-glyph] {
+    display: block;
+  }
+  [data-orb-glyph] svg {
+    display: block;
+  }
+  [data-social-grid] {
+    flex: none;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+  [data-social-grid] a {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 48px;
+    padding: 0 12px;
+    border-radius: 12px;
+    background: var(--surface);
+    box-shadow: var(--surface-line);
+    color: var(--ink);
+    font-family: var(--font-mono), ui-monospace, monospace;
+    font-size: 12px;
+    line-height: 1.2;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    transition: opacity 80ms linear;
+  }
+  [data-social-grid] a[data-active] {
+    box-shadow: inset 0 0 0 1px rgba(108, 242, 255, 0.6);
+  }
+  [data-social-grid] svg {
+    flex: none;
+  }
+  /* a long label wraps to a second line in a narrow chip rather than losing its end */
+  [data-social-label] {
+    display: -webkit-box;
+    min-width: 0;
+    overflow: hidden;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+  }
+  [data-social-arrow] {
+    margin-left: auto;
+    color: var(--muted);
+  }
+
+  /* ---- project detail: header slot (top zone → 40svh) for the parked device, content from 44svh
+     over a bottom-weighted gradient, chips and pills, the bottom clears the Dock ---- */
+  .st-detail {
+    padding: 44svh max(var(--gutter), var(--rail-reserve)) var(--dock-reserve) var(--gutter);
+    background: linear-gradient(to bottom, rgba(10, 11, 16, 0) 36svh, rgba(10, 11, 16, 0.72) 52svh, rgba(10, 11, 16, 0.86) 100%);
+  }
+  .st-detail-slot {
+    position: absolute;
+    top: var(--top-zone);
+    left: var(--gutter);
+    right: max(var(--gutter), var(--rail-reserve));
+    height: calc(40svh - var(--top-zone));
+    align-items: center;
+    justify-content: center;
+    container-type: size;
+    pointer-events: none;
+  }
+  .st-detail-body {
+    max-width: none;
+    background: none;
+  }
+  .st-detail-index {
+    margin-top: 12px;
+  }
+  .st-detail-index ul {
+    gap: 8px;
+  }
+  .st-detail-index .st-chip {
+    width: 44px;
+    padding: 0;
+  }
+  .st-detail-index .st-chip[aria-current] {
+    color: var(--ink);
+    box-shadow: inset 0 0 0 1px rgba(108, 242, 255, 0.6);
+  }
+  .st-detail-index + p {
+    margin-top: 24px;
+  }
+  .st-detail .st-tagline {
+    margin-top: 16px;
+  }
+  .st-detail-desc {
+    margin-top: 24px;
+  }
+  .st-detail-links {
+    margin-top: 32px;
+    gap: 12px;
+  }
+  .st-next {
+    margin-top: 64px;
+  }
+  .st-next-title {
+    padding-block: 4px;
+    /* a 44 px target however small display-l gets (short landscape: 12svh) */
+    min-height: 44px;
+  }
+
+  /* ---- short screens (SE and smaller): display-l steps down, the device slot ends at 40svh ---- */
+  @media (max-height: 700px) {
+    .st-display-l,
+    .st-next-title {
+      font-size: 2.75rem;
+    }
+    .st-proj-slot {
+      height: calc(40svh - var(--top-zone));
+    }
+  }
+  /* ---- contact on short portrait screens (a phone browser with its toolbars showing: the SE is 548 px
+     tall there): tighter band and gaps, so the grid still ends above the Dock and the orb keeps a slot ---- */
+  @media (max-height: 625px) and (orientation: portrait) {
+    .st-contact {
+      gap: 12px;
+    }
+    .st-contact .st-display-l {
+      font-size: 2.5rem;
+    }
+    .st-contact-status {
+      margin-top: 12px;
+    }
+    .st-contact-avail {
+      margin-top: 8px;
+    }
+    [data-orb-icon] {
+      padding: 12px;
+    }
+  }
+}
+
+/* ---- landscape: text on the left, the world (device / orb slots) on the right, clear of the rail ---- */
+@media (pointer: coarse) and (max-height: 500px) and (orientation: landscape) {
+  .st-hero-title {
+    font-size: clamp(2.75rem, 18svh, 5.5rem);
+  }
+  .st-hero-manifesto {
+    top: 24px;
+    right: var(--rail-reserve);
+    max-width: min(22rem, 40vw);
+  }
+  .st-display-l,
+  .st-next-title {
+    font-size: clamp(2.25rem, 12svh, 3rem);
+  }
+
+  .st-about-bio {
+    font-size: 1.125rem;
+    max-width: 60%;
+  }
+  .st-about-bento {
+    max-width: 60%;
+  }
+
+  .st-proj-slot {
+    top: 8svh;
+    left: 50%;
+    right: var(--rail-reserve);
+    height: 84svh;
+  }
+  .st-proj-caption {
+    width: 46%;
+    padding: 16px 0 var(--dock-reserve) var(--gutter);
+    --scrim-at: 30% 55%;
+    --scrim-size: 80% 90%;
+    --scrim-a: 0.72;
+    background: radial-gradient(var(--scrim-size) at var(--scrim-at), rgba(10, 11, 16, var(--scrim-a)), transparent 70%);
+  }
+  .st-proj-card .st-tagline {
+    margin-top: 12px;
+  }
+  .st-proj-cta {
+    margin-top: 16px;
+  }
+
+  /* the text column is a little wider so the email row (sized for 'Copied to clipboard') stays on one
+     line on a 667 px landscape phone */
+  .st-contact {
+    display: grid;
+    grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+    grid-template-rows: auto minmax(0, 1fr) auto;
+    column-gap: 24px;
+    row-gap: 12px;
+    padding: calc(var(--top-zone) + 8px) var(--rail-reserve) var(--dock-reserve) var(--gutter);
+  }
+  .st-contact-band {
+    grid-column: 1;
+    grid-row: 1;
+  }
+  .st-orb {
+    grid-column: 2;
+    grid-row: 1 / -1;
+    min-height: 0;
+  }
+  [data-social-grid] {
+    grid-column: 1;
+    grid-row: 3;
+  }
+  /* the chips are narrower here (152 px on a 667 px phone): every label stays on one line */
+  [data-social-label] {
+    display: block;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    letter-spacing: 0.02em;
+  }
+  /* short landscape (a browser's toolbars showing: 300-345 px; Android full screen: 360 px): the band and a
+     2x2 grid no longer fit above the home-indicator band, so the band starts right under the monogram
+     (10 + 44 px) and the grid becomes one row of four 48 px glyph chips; each label stays the link's
+     accessible name, visually hidden */
+  @media (max-height: 370px) {
+    .st-contact {
+      padding-top: calc(env(safe-area-inset-top, 0px) + 60px);
+    }
+    [data-social-grid] {
+      grid-template-columns: repeat(4, 48px);
+    }
+    [data-social-grid] a {
+      position: relative;
+      justify-content: center;
+      padding: 0;
+    }
+    [data-social-label] {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      margin: -1px;
+      padding: 0;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+    }
+    [data-social-arrow] {
+      display: none;
+    }
+    /* a project stop's card must stay under the top zone (the monogram's) with a two-line tagline too
+       (800x304: Android landscape with Chrome's toolbar): a smaller title and tagline, tighter gaps */
+    .st-proj-card .st-display-l {
+      font-size: clamp(2rem, 11svh, 3rem);
+    }
+    .st-proj-card .slash {
+      margin-bottom: 8px;
+    }
+    .st-proj-card .st-tagline {
+      margin-top: 8px;
+      font-size: 1rem;
+    }
+    .st-proj-tags {
+      margin-top: 8px;
+    }
+    .st-proj-cta {
+      margin-top: 12px;
+    }
+  }
+  /* narrow and short (640 px: a 360x640-class Android with Chrome's toolbar): a ~296 px text column. The email
+     row must stay one line (a tighter pill and gap), or its second row pushes the social row off the screen */
+  @media (max-height: 370px) and (max-width: 660px) {
+    .st-contact-row {
+      column-gap: 8px;
+    }
+    .st-contact .btn-pill {
+      padding-inline: 16px;
+    }
+  }
+  /* shorter still (280 px): a two-line tagline in that column must leave the card under the top zone */
+  @media (max-height: 290px) {
+    .st-proj-card .st-display-l {
+      font-size: clamp(1.75rem, 10svh, 3rem);
+    }
+    .st-proj-card .slash {
+      margin-bottom: 4px;
+    }
+    .st-proj-card .st-tagline {
+      margin-top: 6px;
+    }
+    .st-proj-tags {
+      margin-top: 4px;
+    }
+    .st-proj-cta {
+      margin-top: 8px;
+    }
+  }
+
+  .st-detail {
+    padding-top: var(--top-zone);
+    background: linear-gradient(to right, rgba(10, 11, 16, 0.86) 0%, rgba(10, 11, 16, 0.7) 40%, rgba(10, 11, 16, 0) 56%);
+  }
+  .st-detail-slot {
+    top: 8svh;
+    left: 52%;
+    right: var(--rail-reserve);
+    height: 84svh;
+  }
+  .st-detail-body {
+    max-width: 46%;
+  }
+}
+
+/* caption exit: opacity dips as the block leaves while a counter-translate holds it (--dz-hold) */
+@keyframes ph-dz {
+  0% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  50% {
+    opacity: 0.75;
+    transform: translateY(calc(var(--dz-hold, 40svh) * 0.5));
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(var(--dz-hold, 40svh));
+  }
+}
+/* caption / paragraph entry: fade up 0.6em */
+@keyframes ph-rv {
+  from {
+    opacity: 0;
+    translate: 0 0.6em;
+  }
+  to {
+    opacity: 1;
+    translate: 0 0;
+  }
+}

@@ -1,0 +1,827 @@
+/*
+ * Strict grayscale, like the edit (measured zero chroma). Highlights crushed to #F0F0F0, never #fff.
+ * Caption voice and its calibrated glow are ported from the dossier site (../src/styles/tokens.css).
+ */
+:root {
+  --ink-0: #000000;
+  --ink-2: #1a1a1a;
+  --ink-3: #373737;
+  --mid: #6e6e6e;
+  --mid-2: #8a8a8a;
+  --paper-1: #ececec;
+  --paper-0: #f0f0f0;
+  --dim: rgba(240, 240, 240, 0.58);
+  --faint: rgba(240, 240, 240, 0.18);
+
+  --font: 'Quicksand', ui-rounded, system-ui, sans-serif;
+  --caption-size: clamp(12px, calc(0.6vw + 1.5vh), 20px);
+  --caption-leading: 1.26;
+  --caption-tracking: 0.035em;
+  --glow-text: 0 0 1.5px rgba(240, 240, 240, 0.9), 0 0 6px rgba(240, 240, 240, 0.5), 0 0 18px rgba(240, 240, 240, 0.3);
+  --halo-dark: 0 0 2px rgba(0, 0, 0, 0.9), 0 0 6px rgba(0, 0, 0, 0.62), 0 0 16px rgba(0, 0, 0, 0.42);
+  --statement-size: clamp(3rem, 11vh, 7rem);
+  --gutter: clamp(16px, 2.2vw, 32px);
+  color-scheme: dark;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  background: var(--ink-0);
+  overflow-x: clip;
+}
+html.lenis,
+html.lenis body {
+  height: auto;
+}
+.lenis.lenis-smooth {
+  scroll-behavior: auto !important;
+}
+
+body {
+  margin: 0;
+  background: var(--ink-0);
+  color: var(--paper-0);
+  font-family: var(--font);
+  font-weight: 400;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: clip;
+}
+
+::selection {
+  background: var(--paper-0);
+  color: var(--ink-0);
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+a:focus-visible,
+button:focus-visible {
+  outline: 1px solid var(--paper-0);
+  outline-offset: 4px;
+}
+
+p,
+h1,
+ul {
+  margin: 0;
+  padding: 0;
+}
+ul {
+  list-style: none;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ------------------------------------------------------------- stage */
+
+.poster,
+#stage,
+.scrim {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+.poster {
+  z-index: 0;
+  background: var(--ink-0) url('/media/poster.jpg') center / cover no-repeat;
+  filter: grayscale(1) brightness(0.8);
+  transition: opacity 0.6s ease;
+}
+.poster.gone {
+  opacity: 0;
+}
+#stage {
+  z-index: 1;
+  display: block;
+  opacity: 0;
+  transition: opacity 0.4s ease;
+}
+#stage.live {
+  opacity: 1;
+}
+/* soft local darkening behind caption zones, so type stays legible over busy footage */
+.scrim {
+  z-index: 2;
+  pointer-events: none;
+  transition: background 0.5s ease;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.55) 0%, rgba(0, 0, 0, 0) 40%);
+}
+html[data-sec='1'] .scrim {
+  background:
+    radial-gradient(60% 42% at 0% 0%, rgba(0, 0, 0, 0.78) 0%, rgba(0, 0, 0, 0.5) 45%, rgba(0, 0, 0, 0) 100%),
+    linear-gradient(to bottom, rgba(0, 0, 0, 0.35) 0%, rgba(0, 0, 0, 0) 16%);
+}
+html[data-sec='2'] .scrim {
+  background: radial-gradient(55% 40% at 80% 100%, rgba(0, 0, 0, 0.6) 0%, rgba(0, 0, 0, 0) 100%);
+}
+html[data-sec='3'] .scrim,
+html[data-sec='4'] .scrim {
+  /* merges with the black corner baked into the frames where the edit had its own top-left caption */
+  background: radial-gradient(52% 34% at 0% 0%, rgba(0, 0, 0, 0.6) 0%, rgba(0, 0, 0, 0.25) 55%, rgba(0, 0, 0, 0) 100%);
+}
+html[data-sec='5'] .scrim {
+  background: none;
+}
+
+/* ------------------------------------------------------------- intro */
+
+.intro {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: grid;
+  place-items: center;
+  background: var(--ink-0);
+}
+.intro__inner {
+  width: min(320px, 76vw);
+  display: grid;
+  gap: 14px;
+}
+.intro__label {
+  font: 500 11px/1 var(--font);
+  letter-spacing: 0.28em;
+  color: var(--dim);
+}
+.intro__pct {
+  font: 300 clamp(44px, 9vw, 72px) / 1 var(--font);
+  letter-spacing: 0.04em;
+  text-shadow: var(--glow-text);
+}
+.intro__bar {
+  height: 1px;
+  background: var(--faint);
+  overflow: hidden;
+}
+.intro__bar i {
+  display: block;
+  height: 100%;
+  background: var(--paper-0);
+  box-shadow: 0 0 10px rgba(240, 240, 240, 0.6);
+  transform-origin: left;
+  transform: scaleX(0);
+}
+
+/* ------------------------------------------------------------- hud */
+/* white type with the edit's dark halo: legible over black grounds and over the white burst alike */
+
+.hud {
+  position: fixed;
+  left: 0;
+  right: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 0 var(--gutter);
+  pointer-events: none;
+  opacity: 0;
+  color: var(--paper-0);
+  text-shadow: var(--halo-dark);
+  transition: opacity 1s ease 0.4s;
+}
+.ready .hud {
+  opacity: 1;
+}
+.hud > * {
+  pointer-events: auto;
+}
+.hud--top {
+  top: 0;
+  height: 68px;
+}
+.hud--bottom {
+  bottom: 0;
+  height: 52px;
+  font: 500 10px/1 var(--font);
+  letter-spacing: 0.16em;
+  color: rgba(240, 240, 240, 0.7);
+}
+
+.brand {
+  font: 500 12px/1 var(--font);
+  letter-spacing: 0.22em;
+  white-space: nowrap;
+}
+
+.hud__section {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font: 500 11px/1 var(--font);
+  letter-spacing: 0.26em;
+}
+.hud__idx {
+  font-variant-numeric: tabular-nums;
+}
+.hud__sep {
+  width: 34px;
+  height: 1px;
+  background: rgba(240, 240, 240, 0.6);
+  box-shadow: 0 0 4px rgba(0, 0, 0, 0.7);
+}
+.hud__name {
+  min-width: 13ch;
+}
+
+.sound {
+  display: inline-flex;
+  align-items: center;
+  gap: 11px;
+  height: 36px;
+  padding: 0 15px 0 13px;
+  border: 1px solid rgba(240, 240, 240, 0.45);
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.28);
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.25);
+  color: var(--paper-0);
+  font: 500 10px/1 var(--font);
+  letter-spacing: 0.22em;
+  cursor: pointer;
+  transition: border-color 0.3s;
+}
+.sound:hover,
+.sound.on {
+  border-color: var(--paper-0);
+}
+.sound__bars {
+  display: inline-flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 12px;
+}
+.sound__bars i {
+  width: 2px;
+  height: 3px;
+  background: currentColor;
+}
+.sound.on .sound__bars i {
+  animation: eq 0.9s ease-in-out infinite alternate;
+}
+.sound.on .sound__bars i:nth-child(2) {
+  animation-delay: -0.3s;
+}
+.sound.on .sound__bars i:nth-child(3) {
+  animation-delay: -0.6s;
+}
+.sound.on .sound__bars i:nth-child(4) {
+  animation-delay: -0.15s;
+}
+@keyframes eq {
+  0% {
+    height: 2px;
+  }
+  100% {
+    height: 12px;
+  }
+}
+
+.tc-code {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.rail {
+  flex: 0 1 220px;
+  height: 1px;
+  background: rgba(240, 240, 240, 0.28);
+  box-shadow: 0 0 4px rgba(0, 0, 0, 0.6);
+  overflow: hidden;
+}
+.rail__fill {
+  display: block;
+  height: 100%;
+  background: var(--paper-0);
+  transform-origin: left;
+  transform: scaleX(0);
+}
+.coords {
+  white-space: nowrap;
+}
+
+/* ------------------------------------------------------------- typed caption */
+/* One custom property, --p (characters typed), drives every char of every layer (see src/type.ts). */
+
+.tc {
+  --p: 0;
+  --tc-dim: 0.35;
+  --tc-lag: 2.4;
+  --tc-ramp: 8;
+  position: relative;
+  display: block;
+  font-family: var(--font);
+  font-size: var(--caption-size);
+  font-weight: 400;
+  line-height: var(--caption-leading);
+  letter-spacing: var(--caption-tracking);
+  text-transform: uppercase;
+  color: var(--paper-0);
+}
+.tc-layer,
+.tc-line {
+  display: block;
+}
+.tc-w {
+  white-space: nowrap;
+}
+@media (min-width: 768px) {
+  /* lines are pre-broken (the edit never re-wraps a caption); phones wrap between words */
+  .tc-line {
+    white-space: nowrap;
+  }
+}
+.tc-fx {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  user-select: none;
+}
+.tc-ch {
+  --d: calc(var(--p) - var(--i));
+  opacity: calc(
+    clamp(0, var(--d) * 1000, 1) *
+      clamp(var(--tc-dim), var(--tc-dim) + (var(--d) - var(--tc-lag)) * (1 - var(--tc-dim)) / var(--tc-ramp), 1)
+  );
+}
+.tc-fx .tc-ch {
+  opacity: clamp(0, (var(--d) - var(--tc-lag)) / var(--tc-ramp), 1);
+}
+/* the three-layer "deep glow", calibrated at 19.5 px against the edit's t_06.50 frame */
+.tc-g1 {
+  filter: blur(0.26em);
+  opacity: 0.9;
+}
+.tc-g2 {
+  filter: blur(0.82em);
+  -webkit-text-stroke: 0.077em currentColor;
+}
+.tc-g3 {
+  filter: blur(2.26em);
+  -webkit-text-stroke: 0.26em currentColor;
+}
+.tc-core {
+  text-shadow: 0 0 1.5px rgba(240, 240, 240, 0.9);
+}
+/* over light grounds (the burst, the inverted chapter) the edit keeps white type but swaps the bloom
+   for a dark halo; the bloom would vanish on white anyway */
+.tc--halo {
+  font-weight: 500;
+}
+.tc--halo .tc-fx {
+  display: none;
+}
+.tc--halo .tc-core {
+  text-shadow: var(--halo-dark);
+}
+
+/* duo: for shots that swing from black to blown-out white (the brief): wide bloom kept, the tight
+   bloom swapped for the dark halo, so the type holds on both */
+.tc--duo .tc-g1 {
+  display: none;
+}
+.tc--duo .tc-core {
+  text-shadow: 0 0 1.5px rgba(240, 240, 240, 0.8), var(--halo-dark);
+}
+
+/* ------------------------------------------------------------- sections */
+
+main {
+  position: relative;
+  z-index: 5;
+}
+.sec {
+  position: relative;
+}
+.pin {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  height: 100svh;
+  overflow: hidden;
+  pointer-events: none;
+}
+.pin a,
+.pin .is-current {
+  pointer-events: auto;
+}
+
+/* caption zones: the edit's top-left block, and the bottom-right block that starts at the centre line */
+.zone {
+  position: absolute;
+  display: grid;
+  isolation: isolate;
+}
+/* a soft dark plate under a live caption, the same idea as the black corner baked into the frames */
+.zone::before {
+  content: '';
+  position: absolute;
+  inset: -84px -72px -84px -56px;
+  z-index: -1;
+  background: radial-gradient(closest-side, rgba(0, 0, 0, 0.66), rgba(0, 0, 0, 0.42) 55%, rgba(0, 0, 0, 0));
+  opacity: 0;
+  transition: opacity 0.25s ease;
+  pointer-events: none;
+}
+.zone:has(.tc.is-on)::before {
+  opacity: 1;
+}
+.zone > * {
+  grid-area: 1 / 1;
+}
+.zone--tl {
+  left: var(--gutter);
+  top: clamp(86px, 11.5vh, 124px);
+  max-width: calc(100vw - 2 * var(--gutter));
+}
+.zone--br {
+  left: 51%;
+  right: var(--gutter);
+  bottom: clamp(74px, 11vh, 120px);
+}
+
+.zc {
+  pointer-events: none;
+}
+.zc.is-current {
+  pointer-events: auto;
+}
+.zc__hit {
+  display: block;
+  width: max-content;
+  max-width: 100%;
+}
+.zc__hit .tc {
+  transition: transform 0.25s ease;
+}
+.zc__hit:hover .tc,
+.zc__hit:focus-visible .tc {
+  transform: translateX(4px);
+}
+.zc__meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px 18px;
+  margin-top: 0.9em;
+  font: 500 calc(var(--caption-size) * 0.72) / 1.3 var(--font);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+.zc.is-current .zc__meta {
+  opacity: 1;
+  transition: opacity 0.4s ease 1.1s;
+}
+.zc__tags {
+  color: rgba(240, 240, 240, 0.72);
+  text-shadow: var(--halo-dark);
+}
+.zc__link {
+  padding: 4px 0 3px;
+  border-bottom: 1px solid rgba(240, 240, 240, 0.55);
+  text-shadow: var(--halo-dark);
+  transition: border-color 0.3s;
+}
+.zc__link:hover,
+.zc__link:focus-visible {
+  border-color: var(--paper-0);
+  outline: none;
+}
+
+/* hero */
+.sec--hero {
+  height: 220vh;
+}
+.hero__block {
+  position: absolute;
+  left: var(--gutter);
+  right: var(--gutter);
+  bottom: clamp(86px, 13vh, 140px);
+}
+.hero__name {
+  margin-top: clamp(12px, 2vh, 22px);
+  font: 300 clamp(44px, 8.4vw, 150px) / 0.98 var(--font);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--paper-0);
+  text-shadow:
+    0 0 3px rgba(240, 240, 240, 0.7),
+    0 0 18px rgba(240, 240, 240, 0.32),
+    0 0 60px rgba(240, 240, 240, 0.14);
+}
+.hero__row {
+  display: block;
+  white-space: nowrap;
+}
+.hero__name .l {
+  display: inline-block;
+  opacity: 0;
+}
+.reduced .hero__name .l {
+  opacity: 1;
+}
+.hero__cue {
+  position: absolute;
+  right: var(--gutter);
+  bottom: clamp(88px, 13.4vh, 142px);
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  font: 500 10px/1 var(--font);
+  letter-spacing: 0.3em;
+  color: var(--dim);
+  opacity: 0;
+}
+.reduced .hero__cue {
+  opacity: 1;
+}
+.hero__cue i {
+  position: relative;
+  width: 1px;
+  height: 46px;
+  background: var(--faint);
+  overflow: hidden;
+}
+.hero__cue i::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: -40%;
+  width: 1px;
+  height: 40%;
+  background: var(--paper-0);
+  animation: cue 1.8s cubic-bezier(0.7, 0, 0.3, 1) infinite;
+}
+@keyframes cue {
+  to {
+    top: 100%;
+  }
+}
+
+.sec--brief {
+  height: 300vh;
+}
+.sec--pause {
+  height: 220vh;
+}
+.sec--file {
+  height: 560vh;
+}
+.sec--question {
+  height: 520vh;
+}
+
+/* the question word, set like the edit's "HUMAN?" on the burst: dark grey, soft, skewed quotes */
+.qword {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  gap: 0.04em;
+  transform: translateY(-50%);
+  font: 400 var(--statement-size) / 1 var(--font);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #2a2a2a;
+  visibility: hidden;
+}
+.qword.on {
+  visibility: visible;
+}
+.qword__w {
+  display: inline-block;
+  white-space: nowrap;
+  opacity: 0.86;
+  text-shadow:
+    0 0 1px rgba(0, 0, 0, 0.35),
+    0 0 10px rgba(0, 0, 0, 0.22);
+}
+.qword__q {
+  font-size: 0.8em;
+  line-height: 1;
+  color: #3a3a3a;
+  transform: translateY(-0.12em);
+}
+/* after the polarity flip the word sits on the black burst: it inverts with the ground */
+.qword.flip {
+  color: var(--paper-0);
+}
+.qword.flip .qword__w {
+  text-shadow: var(--glow-text);
+}
+.qword.flip .qword__q {
+  color: var(--paper-1);
+}
+
+/* outro: the handle card, where the edit puts its own @PZXEPITSU (centred, ~58% down, glowing) */
+.sec--contact {
+  min-height: 170vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+}
+.contact__inner {
+  min-height: 100vh;
+  min-height: 100svh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(22px, 4.5vh, 40px);
+  padding: 12vh var(--gutter) 0;
+  text-align: center;
+}
+.handle {
+  font: 500 clamp(26px, 4.4vw, 64px) / 1 var(--font);
+  letter-spacing: 0.05em;
+  white-space: nowrap;
+  color: var(--paper-0);
+  opacity: 0;
+  transition: opacity 0.25s ease;
+}
+.handle span {
+  text-shadow:
+    0 0 3px rgba(240, 240, 240, 0.85),
+    0 0 14px rgba(240, 240, 240, 0.5),
+    0 0 40px rgba(240, 240, 240, 0.24);
+}
+#contact.in .handle,
+.reduced .handle {
+  opacity: 1;
+}
+#contact.in .handle span {
+  animation: breathe 3.2s ease-in-out 0.4s infinite alternate;
+}
+@keyframes breathe {
+  to {
+    text-shadow:
+      0 0 3px rgba(240, 240, 240, 0.9),
+      0 0 18px rgba(240, 240, 240, 0.6),
+      0 0 54px rgba(240, 240, 240, 0.3);
+  }
+}
+.contact__mail {
+  display: block;
+}
+.contact__mail .tc {
+  text-align: center;
+}
+.links {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px clamp(18px, 3vw, 40px);
+  opacity: 0;
+  transform: translateY(8px);
+  transition:
+    opacity 0.6s ease 1.2s,
+    transform 0.6s ease 1.2s;
+}
+#contact.in .links,
+.reduced .links {
+  opacity: 1;
+  transform: none;
+}
+.links a {
+  display: inline-flex;
+  padding: 10px 2px 6px;
+  border-bottom: 1px solid rgba(240, 240, 240, 0.3);
+  font: 500 11px/1 var(--font);
+  letter-spacing: 0.26em;
+  transition:
+    border-color 0.3s,
+    text-shadow 0.3s;
+}
+.links a:hover,
+.links a:focus-visible {
+  border-color: var(--paper-0);
+  text-shadow: var(--glow-text);
+  outline: none;
+}
+.foot {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px 16px;
+  flex-wrap: wrap;
+  padding: 24px var(--gutter) 72px;
+  border-top: 1px solid rgba(240, 240, 240, 0.08);
+  font: 500 11px/1.6 var(--font);
+  letter-spacing: 0.06em;
+  color: rgba(240, 240, 240, 0.5);
+}
+
+/* ------------------------------------------------------------- phones */
+
+@media (max-width: 767px) {
+  :root {
+    --caption-size: clamp(12px, 3.3vw, 14px);
+    --statement-size: 10.4vw;
+  }
+  /* drop the two wide glow clones, put a cheap shadow bloom on the core instead */
+  .tc-g2,
+  .tc-g3 {
+    display: none;
+  }
+  .tc:not(.tc--halo) .tc-core {
+    text-shadow:
+      0 0 1.5px rgba(240, 240, 240, 0.9),
+      0 0 10px rgba(240, 240, 240, 0.45);
+  }
+  html[data-sec='1'] .scrim,
+  html[data-sec='3'] .scrim,
+  html[data-sec='4'] .scrim {
+    background:
+      linear-gradient(to bottom, rgba(0, 0, 0, 0.72) 0%, rgba(0, 0, 0, 0.4) 22%, rgba(0, 0, 0, 0) 36%),
+      linear-gradient(to top, rgba(0, 0, 0, 0.5) 0%, rgba(0, 0, 0, 0) 30%);
+  }
+  .hud--top {
+    height: 58px;
+  }
+  .hud__section,
+  .coords {
+    display: none;
+  }
+  .brand {
+    font-size: 11px;
+    letter-spacing: 0.18em;
+  }
+  .rail {
+    flex-basis: 130px;
+  }
+  .sound {
+    height: 34px;
+    padding: 0 12px;
+  }
+  .zone--tl {
+    top: 74px;
+    left: 16px;
+    right: 16px;
+  }
+  .zone--br {
+    left: 16px;
+    right: 16px;
+    bottom: 66px;
+  }
+  .hero__block {
+    bottom: 104px;
+  }
+  .hero__name {
+    font-size: 15.5vw;
+    letter-spacing: 0.04em;
+  }
+  .hero__cue {
+    left: var(--gutter);
+    right: auto;
+    bottom: 62px;
+  }
+  .hero__cue i {
+    display: none;
+  }
+  .handle {
+    font-size: 8vw;
+  }
+  .foot {
+    flex-direction: column;
+    padding-bottom: 66px;
+  }
+}
+
+/* reduced motion: captions are simply there, fully lit; no animation anywhere */
+@media (prefers-reduced-motion: reduce) {
+  .tc {
+    --p: 100000 !important;
+  }
+  .tc:not(.is-on) {
+    visibility: hidden;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    transition-delay: 0s !important;
+  }
+}

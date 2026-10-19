@@ -1,0 +1,50 @@
+<!doctype html><html><head><meta charset="utf-8"><style>body{margin:0;background:#000}canvas{display:block;width:960px;height:600px;filter:blur(.6px)}</style></head><body>
+<script>
+function rng(seed){let a=seed>>>0;const next=()=>{a=(a+0x6d2b79f5)>>>0;let t=a;t=Math.imul(t^(t>>>15),t|1);t^=t+Math.imul(t^(t>>>7),t|61);return((t^(t>>>14))>>>0)/4294967296};return{next}}
+const PAPER="236,236,236";
+function layer(w,h){const c=document.createElement('canvas');c.width=w;c.height=h;return[c,c.getContext('2d')]}
+function renderBurst({seed=3,cx=.5,cy=.97,radius=.5,strokes=3400,lobes=10,width=1600,height=1000}={}){
+  const R=rng(seed*104729+7),W=width,H=height,S=Math.min(W,H),X=cx*W,Y=cy*H;
+  // envelope: a slightly squashed dome + rounded flame tongues (gaussian bumps), mostly on the upper half
+  const tongues=Array.from({length:lobes},(_,k)=>{const up=k<lobes*0.7;const c=up? -Math.PI/2+(R.next()-0.5)*Math.PI*0.62 : -Math.PI*(0.08+0.84*R.next());return{c,w:up?0.045+R.next()*0.05:0.08+R.next()*0.1,A:up?0.1+R.next()*0.26:0.04+R.next()*0.1}});
+  const wob=Array.from({length:6},()=>({f:3+Math.floor(R.next()*9),p:R.next()*6.28,a:0.012+R.next()*0.02}));
+  const angd=(a,b)=>{let d=a-b;d=Math.atan2(Math.sin(d),Math.cos(d));return d};
+  const env=a=>{let e=1;for(const t of tongues){const d=angd(a,t.c)/t.w;e+=t.A*Math.exp(-d*d)}for(const w of wob)e+=w.a*Math.sin(a*w.f+w.p);return e};
+  const [out,ctx]=layer(W,H);
+  const unit=S/700;
+  // 1) body: envelope at 0.86, softly blurred
+  const [bc,b]=layer(W,H);b.fillStyle=`rgb(${PAPER})`;b.beginPath();
+  for(let i=0;i<=720;i++){const a=i/720*Math.PI*2,r=radius*S*env(a)*0.8;b.lineTo(X+Math.cos(a)*r,Y+Math.sin(a)*r)}b.closePath();b.fill();
+  ctx.filter=`blur(${(S/38).toFixed(1)}px)`;ctx.drawImage(bc,0,0);ctx.filter='none';
+  // the blur fades the body where it meets the canvas edge: re-fill the core sharply (well inside the soft edge)
+  ctx.save();ctx.beginPath();ctx.arc(X,Y,radius*S*0.68,0,Math.PI*2);ctx.clip();ctx.fillStyle=`rgb(${PAPER})`;ctx.fillRect(0,0,W,H);ctx.restore();
+  // 2) fur: short, wide, soft, slightly curved strokes straddling the edge
+  const [fc,f]=layer(W,H);f.lineCap='round';
+  for(let i=0;i<strokes;i++){
+    const a=R.next()*Math.PI*2,e=env(a)*radius*S;
+    const r0=e*(0.55+R.next()*0.3), r1=e*(0.86+R.next()*0.16);
+    const bend=(R.next()-0.5)*0.05*e, curl=(R.next()-0.5)*0.035;
+    const x0=X+Math.cos(a)*r0,y0=Y+Math.sin(a)*r0,x1=X+Math.cos(a+curl)*r1,y1=Y+Math.sin(a+curl)*r1;
+    const mx=(x0+x1)/2-Math.sin(a)*bend,my=(y0+y1)/2+Math.cos(a)*bend;
+    const w0=(8+R.next()*18)*unit,al=0.07+R.next()*0.16;
+    // two passes: wide faint + narrow brighter core => feathered bristle
+    f.strokeStyle=`rgba(${PAPER},${al.toFixed(3)})`;f.lineWidth=w0;f.beginPath();f.moveTo(x0,y0);f.quadraticCurveTo(mx,my,x1,y1);f.stroke();
+    f.strokeStyle=`rgba(${PAPER},${(al*1.2).toFixed(3)})`;f.lineWidth=w0*0.3;f.beginPath();f.moveTo(x0,y0);f.quadraticCurveTo(mx,my,(x0+x1*2)/3+ (x1-x0)/3*0.4,(y0+y1*2)/3+(y1-y0)/3*0.4);f.stroke();
+  }
+  ctx.filter=`blur(${(S/200).toFixed(2)}px)`;ctx.drawImage(fc,0,0);ctx.filter='none';
+  // 3) dry-brush texture: radial grey streaks inside the body
+  const [tc,tx]=layer(W,H);
+  for(let i=0;i<450;i++){const a=R.next()*Math.PI*2,e=env(a)*radius*S,r0=e*(0.35+R.next()*0.5),r1=r0+e*(0.08+R.next()*0.3);
+    tx.strokeStyle=`rgba(70,70,70,${(0.03+R.next()*0.07).toFixed(3)})`;tx.lineWidth=(1+R.next()*3)*unit;tx.beginPath();tx.moveTo(X+Math.cos(a)*r0,Y+Math.sin(a)*r0);tx.lineTo(X+Math.cos(a)*r1,Y+Math.sin(a)*r1);tx.stroke();}
+  // dark strands between the bristles near the edge: the fur's definition
+  for(let i=0;i<420;i++){const a=R.next()*Math.PI*2,e=env(a)*radius*S,r0=e*(0.7+R.next()*0.2),r1=e*(0.9+R.next()*0.12);
+    tx.strokeStyle=`rgba(40,40,40,${(0.08+R.next()*0.16).toFixed(3)})`;tx.lineWidth=(0.6+R.next()*1.4)*unit;tx.beginPath();tx.moveTo(X+Math.cos(a)*r0,Y+Math.sin(a)*r0);tx.lineTo(X+Math.cos(a+0.01)*r1,Y+Math.sin(a+0.01)*r1);tx.stroke();}
+  ctx.globalCompositeOperation='source-atop';ctx.filter=`blur(${(S/600).toFixed(2)}px)`;ctx.drawImage(tc,0,0);ctx.filter='none';
+  // 4) specks
+  ctx.globalCompositeOperation='destination-out';
+  for(let i=0;i<140;i++){const a=R.next()*Math.PI*2,r=radius*S*(0.3+R.next()*0.75);ctx.fillStyle=`rgba(0,0,0,${(0.2+R.next()*0.5).toFixed(2)})`;ctx.fillRect(X+Math.cos(a)*r,Y+Math.sin(a)*r,(1+R.next()*2)*unit,(1+R.next()*1.5)*unit)}
+  ctx.globalCompositeOperation='source-over';
+  return out;
+}
+const c=renderBurst({seed:+(location.hash.slice(1)||3)});document.body.appendChild(c);
+</script></body></html>

@@ -1,0 +1,29 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;500&display=block">
+<style>
+/* Prototype: one CSS var (--p = chars typed, float) drives dim->bright->glow for every char in all layers. */
+body{margin:0;background:#000;width:960px;height:140px;overflow:hidden}
+.cap{position:absolute;left:11px;top:30px;font:400 19.5px/24.5px Quicksand,sans-serif;letter-spacing:.035em;
+     text-transform:uppercase;color:#f0f0f0;white-space:pre;--p:0}
+.cap .layer{position:absolute;inset:0}
+.cap .core{position:relative;text-shadow:0 0 1.5px rgba(240,240,240,.9)}
+.cap .g1{filter:blur(5px);opacity:.9}
+.cap .g2{filter:blur(16px);-webkit-text-stroke:1.5px #f0f0f0}
+.cap .g3{filter:blur(44px);-webkit-text-stroke:5px #f0f0f0}
+.ch{--d:calc(var(--p) - var(--i));
+    /* 0 before typed; jumps to .35 when typed; ramps to 1 over the next 8 chars (~200ms @ 40cps) */
+    opacity:calc(clamp(0, var(--d) * 1000, 1) * clamp(.35, .35 + var(--d) * .08125, 1))}
+.layer:not(.core) .ch{opacity:clamp(0, calc((var(--d) - 1) / 8), 1)} /* glow only arrives as char brightens */
+</style></head><body>
+<div class="cap" id="cap" aria-label="The eyes: she sees the world through control. They represent the power to make others obey."></div>
+<script>
+const lines=['THE EYES:','SHE SEES THE WORLD THROUGH CONTROL.','THEY REPRESENT THE POWER TO MAKE OTHERS OBEY.'];
+const cap=document.getElementById('cap');
+const build=()=>{let i=0;return lines.map(l=>[...l].map(c=>`<span class="ch" style="--i:${c===' '?i++:i++}">${c}</span>`).join('')).join('\n');};
+for(const cls of ['g3','g2','g1','core']){const d=document.createElement('div');d.className='layer '+cls;d.setAttribute('aria-hidden','true');d.innerHTML=build();cap.appendChild(d);}
+window.setP=(p)=>cap.style.setProperty('--p',p);
+// live demo: 40 chars/s
+const total=lines.join('').length; let t0=performance.now();
+if(!location.hash){(function tick(t){const p=(t-t0)/1000*40;setP(p);if(p<total+10)requestAnimationFrame(tick)})(t0);}
+</script></body></html>

@@ -1,0 +1,1494 @@
+/*
+ * The film. Default (no JS / reduced motion): every shot is a full-height frame, stacked and scrolled normally.
+ * html[data-film]: the shots are pinned into one fixed stage; Film.tsx cuts between them on scroll.
+ */
+
+/* ── shots: shared ──────────────────────────────────────────────────── */
+.shot {
+  position: relative;
+  min-height: 100svh;
+  overflow: hidden;
+  isolation: isolate;
+  /* the diagonal sword cut that reveals a shot (--w: 0 hidden → 1 shown) */
+  clip-path: polygon(0 0, calc(var(--w, 1) * 118%) 0, calc(var(--w, 1) * 118% - 18%) 100%, 0 100%);
+}
+
+.layers {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.bg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transform-origin: 50% 50%;
+}
+
+.chr {
+  position: absolute;
+  width: auto;
+  max-width: none;
+  transform-origin: 50% 100%;
+}
+
+/* idle: a slow breath, so the frame never feels frozen */
+.breathe {
+  animation: breathe 5.5s ease-in-out infinite alternate;
+}
+
+@keyframes breathe {
+  from {
+    scale: 1 1;
+  }
+  to {
+    scale: 1.004 1.012;
+  }
+}
+
+/* drifting mist bands: flat, soft-edged, slow */
+.mist {
+  position: absolute;
+  left: -30%;
+  width: 160%;
+  height: 26%;
+  background: var(--rice);
+  opacity: 0.3;
+  mask-image: linear-gradient(to bottom, transparent, #000 45%, #000 55%, transparent);
+  animation: mist 38s linear infinite alternate;
+}
+
+.mist-a {
+  top: 52%;
+}
+
+.mist-b {
+  top: 70%;
+  height: 11%;
+  opacity: 0.38;
+  animation-duration: 27s;
+  animation-direction: alternate-reverse;
+}
+
+@keyframes mist {
+  from {
+    transform: translateX(-6%);
+  }
+  to {
+    transform: translateX(6%);
+  }
+}
+
+/* wooden rollers of a scroll */
+.rod {
+  position: relative;
+  display: block;
+  height: 12px;
+  margin: 0 -12px;
+  background: var(--ink);
+}
+
+.rod::before,
+.rod::after {
+  content: "";
+  position: absolute;
+  top: -3px;
+  width: 9px;
+  height: 18px;
+  background: var(--gold);
+}
+
+.rod::before {
+  left: -6px;
+}
+
+.rod::after {
+  right: -6px;
+}
+
+/* hidden key field of the Ink Garden */
+.ink-input {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 1px;
+  height: 1px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  opacity: 0;
+  font-size: 16px;
+  color: transparent;
+  background: transparent;
+  caret-color: transparent;
+  pointer-events: none;
+}
+
+/* ── sprites (Sprite.tsx): one strip of drawings, frame 0 until the film plays it ── */
+.sprite {
+  background-repeat: no-repeat;
+  background-position: 0 0;
+}
+
+.sprite.gl {
+  background-image: none !important;
+}
+
+.sprite-gl {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* procedural travel layers (Motion.tsx) */
+.culm-rush,
+.speedlines,
+.gold-clouds {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.culm-run,
+.speed-run {
+  display: block;
+  height: 100%;
+}
+
+.culm-rush-far .culm-run {
+  width: calc(100% + 300px);
+}
+
+.culm-rush-near .culm-run {
+  width: calc(100% + 1400px);
+}
+
+.speed-run {
+  width: calc(100% + 640px);
+}
+
+.speedlines {
+  display: none;
+}
+
+.gold-cloud {
+  position: absolute;
+  left: 0;
+  width: 34vw;
+  height: auto;
+}
+
+.gold-cloud-0 {
+  top: 15%;
+  translate: 8vw 0;
+}
+
+.gold-cloud-1 {
+  top: 33%;
+  width: 24vw;
+  translate: 58vw 0;
+}
+
+.impact {
+  position: absolute;
+  left: 47%;
+  top: 46%;
+  width: 46vmin;
+  height: 46vmin;
+  margin: -23vmin 0 0 -23vmin;
+  background: #fff;
+  clip-path: polygon(50% 0, 55% 43%, 100% 50%, 55% 57%, 50% 100%, 45% 57%, 0 50%, 45% 43%);
+  opacity: 0;
+}
+
+/* ── 1 · the moon roof ─────────────────────────────────────────────── */
+.shot-s1 .bg {
+  object-position: 66% 50%;
+}
+
+.s1-ronin {
+  height: 86%;
+  bottom: 8%;
+  left: 45%;
+}
+
+.s1-roof {
+  width: 115%;
+  left: -8%;
+  bottom: -14%;
+}
+
+.moon-glint {
+  display: none;
+}
+
+.s1-copy {
+  position: absolute;
+  z-index: 2;
+  left: 3.5vw;
+  top: 10%;
+  width: 48vw;
+}
+
+.s1-kicker {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+}
+
+.s1-ink {
+  width: 100%;
+  height: 56svh;
+  margin: 0.5rem 0 0.25rem -1vw;
+}
+
+.s1-manifesto {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  --d: 2600ms;
+}
+
+.s1-vertical {
+  position: absolute;
+  z-index: 2;
+  right: 2.6vw;
+  top: 15%;
+  font-size: clamp(2rem, 3.4vw, 3.4rem);
+  line-height: 1.05;
+}
+
+.s1-kana {
+  position: absolute;
+  z-index: 2;
+  right: calc(2.6vw + clamp(2.6rem, 4.2vw, 4.2rem));
+  top: 15%;
+  font-size: 11px;
+}
+
+.s1-scroll {
+  position: absolute;
+  z-index: 2;
+  left: 4vw;
+  bottom: 6%;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+/* ── 2 · the bamboo grove ──────────────────────────────────────────── */
+.s2-ronin {
+  height: 62%;
+  left: 2%;
+  bottom: 2%;
+}
+
+.culm {
+  position: absolute;
+  top: -4%;
+  bottom: -4%;
+  width: 3.4vw;
+  background:
+    repeating-linear-gradient(to bottom, transparent 0 calc(23vh - 6px), var(--ink) calc(23vh - 6px) 23vh),
+    var(--ink-2);
+  border-left: 3px solid var(--steel);
+}
+
+.culm-a {
+  left: 33%;
+}
+
+.culm-b {
+  left: 88%;
+  width: 2.2vw;
+}
+
+.s2-card {
+  position: absolute;
+  z-index: 2;
+  right: 21vw;
+  top: 15%;
+  width: min(40vw, 580px);
+  padding: clamp(1.25rem, 2.4vw, 2.25rem);
+}
+
+.s2-kakejiku {
+  position: absolute;
+  z-index: 2;
+  right: 4vw;
+  top: 9%;
+  width: 13vw;
+  margin: 0;
+  background: var(--ink);
+  padding: 0 6px;
+  box-shadow: 8px 8px 0 0 var(--crimson);
+}
+
+/* ── 3 · the gold corridor ─────────────────────────────────────────── */
+.shot-s3 {
+  background: var(--ink);
+}
+
+.shot-s3 .bg {
+  object-position: 50% 55%;
+}
+
+.s3-ronin {
+  height: 64svh;
+  left: 50%;
+  margin-left: calc(64svh * -0.29);
+  bottom: 0;
+}
+
+.s3-head {
+  position: relative;
+  z-index: 2;
+  padding: 12svh 4vw 0;
+}
+
+.s3-panels {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  gap: 2rem;
+  padding: 2.5rem 4vw 14svh;
+}
+
+@media (min-width: 768px) {
+  .s3-panels {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.fusuma {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: clamp(420px, 62svh, 640px);
+  text-align: left;
+  cursor: pointer;
+  background: var(--gold);
+  border: 8px solid var(--ink-2);
+  box-shadow: 12px 12px 0 0 var(--crimson);
+  overflow: hidden;
+  --glint-to: 900px;
+}
+
+.fusuma-paint {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.fusuma-veil {
+  position: absolute;
+  inset: 0;
+  background: rgb(236 230 216 / 0.66);
+  clip-path: polygon(0 0, 100% 0, 100% 34%, 0 46%);
+}
+
+.fusuma-shot {
+  position: relative;
+  display: block;
+  flex: 1;
+  min-height: 0;
+  margin: 0.25rem 1rem 1rem;
+  border: 3px solid var(--ink);
+  overflow: hidden;
+  background: var(--ink);
+}
+
+@media (min-width: 640px) {
+  .fusuma-shot {
+    margin: 0.25rem 1.25rem 1rem;
+  }
+}
+
+.fusuma-shot img {
+  transition: transform 600ms cubic-bezier(0.2, 0, 0, 1);
+}
+
+.fusuma:hover .fusuma-shot img,
+.fusuma:focus-visible .fusuma-shot img {
+  transform: scale(1.04);
+}
+
+/* ── 4 · the duel ──────────────────────────────────────────────────── */
+.shot-s4 .bg {
+  object-position: 50% 60%;
+}
+
+/* the two fighters face each other across the frame; the scroll of techniques hangs between them */
+.s4-oni {
+  height: 70%;
+  left: 3%;
+  bottom: 2%;
+}
+
+.s4-ronin {
+  height: 50%;
+  right: 2%;
+  bottom: 3%;
+}
+
+.clash {
+  position: absolute;
+  left: 47%;
+  top: 38%;
+  width: 34vmin;
+  height: 34vmin;
+  margin: -17vmin 0 0 -17vmin;
+  background: var(--rice);
+  clip-path: polygon(50% 0, 56% 44%, 100% 50%, 56% 56%, 50% 100%, 44% 56%, 0 50%, 44% 44%);
+  opacity: 0;
+}
+
+.s4-scroll {
+  position: absolute;
+  z-index: 2;
+  left: 45%;
+  top: 9%;
+  width: min(24vw, 340px);
+  margin-left: max(-12vw, -170px);
+}
+
+.s4-sheet {
+  padding: clamp(1rem, 2vw, 1.75rem);
+}
+
+.s4-memory {
+  display: none;
+}
+
+/* ── 5 · the roof run ──────────────────────────────────────────────── */
+.shot-s5 .bg {
+  object-position: 50% 42%;
+}
+
+/* the runner rides on a ridge that rushes past (Motion.tsx RidgeRun) */
+.s5-runner {
+  position: absolute;
+  inset: 0;
+}
+
+/* static layout: he runs above the path cards, top right; the film moves him onto the ridge */
+.s5-across {
+  position: absolute;
+  right: 4vw;
+  top: 6%;
+  height: min(30vh, 270px);
+  aspect-ratio: 1072 / 640;
+}
+
+html[data-film] .s5-across {
+  left: 5vw;
+  right: auto;
+  top: auto;
+  bottom: calc(48% - 24px);
+  height: 34%;
+}
+
+.s5-leap {
+  position: absolute;
+  inset: 0;
+  transform-origin: 50% 90%;
+}
+
+.s5-ronin {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.ridge {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 52%;
+  bottom: 0;
+  overflow: hidden;
+}
+
+.ridge-run {
+  display: block;
+  width: calc(100% + 240px);
+}
+
+.s5-head {
+  position: relative;
+  z-index: 2;
+  padding: 12svh 4vw 0;
+}
+
+.s5-track {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.25rem;
+  padding: 2rem 4vw 12svh;
+  list-style: none;
+}
+
+.s5-card,
+.s5-print {
+  position: relative;
+  flex: none;
+  width: clamp(240px, 21vw, 310px);
+  min-height: 210px;
+  padding: 1.1rem 1.2rem 1.25rem;
+  background: rgb(11 22 34 / 0.9);
+  border-top: 5px solid var(--vermilion);
+  box-shadow: 8px 8px 0 0 var(--ink);
+}
+
+.s5-print {
+  width: clamp(290px, 28vw, 420px);
+  padding: 0;
+  overflow: hidden;
+  border: 4px solid var(--rice);
+}
+
+.s5-kanji {
+  position: absolute;
+  right: 0.8rem;
+  top: 0.4rem;
+  font-size: 3.4rem;
+  line-height: 1;
+  color: transparent;
+  -webkit-text-stroke: 1.2px var(--gold);
+  opacity: 0.8;
+}
+
+/* ── 6 · the rider ─────────────────────────────────────────────────── */
+.s6-rider {
+  position: absolute;
+  left: 5vw;
+  bottom: 5%;
+  height: 40%;
+  aspect-ratio: 1035 / 609;
+}
+
+.s6-bob {
+  position: absolute;
+  inset: 0;
+}
+
+.s6-horse {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.s6-head {
+  position: absolute;
+  z-index: 2;
+  left: 4vw;
+  top: 13%;
+  width: min(40vw, 560px);
+  padding: clamp(1.1rem, 2.2vw, 2rem);
+}
+
+.s6-letter {
+  position: absolute;
+  z-index: 2;
+  right: 4vw;
+  top: 14%;
+  width: 48vw;
+  height: 58svh;
+  background: rgb(236 230 216 / 0.78);
+  border: 3px solid var(--ink);
+  box-shadow: 10px 10px 0 0 var(--crimson);
+  cursor: text;
+}
+
+.s6-letter.is-focused {
+  outline: 3px solid var(--vermilion);
+  outline-offset: 4px;
+}
+
+.s6-ink {
+  position: absolute;
+  inset: 0 0 4.5rem;
+}
+
+.s6-prompt {
+  position: absolute;
+  left: 1.25rem;
+  right: 1.25rem;
+  top: 42%;
+  text-align: center;
+  pointer-events: none;
+}
+
+.s6-actions {
+  position: absolute;
+  left: 1rem;
+  right: 1rem;
+  bottom: 1rem;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.s6-socials {
+  margin-top: 1.5rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem 1.1rem;
+  list-style: none;
+}
+
+/* ── credits ───────────────────────────────────────────────────────── */
+.shot-cr {
+  background: var(--ink);
+  text-align: center;
+}
+
+.cr-moon {
+  object-position: 22% 50%;
+}
+
+.cr-veil {
+  position: absolute;
+  inset: 0;
+  background: rgb(11 22 34 / 0.74);
+}
+
+.cr-roll {
+  position: relative;
+  z-index: 2;
+  width: min(84vw, 660px);
+  margin: 0 auto;
+  padding: 16svh 0 20svh;
+}
+
+.cr-list {
+  margin-top: 3.5rem;
+  display: grid;
+  gap: 2.2rem;
+}
+
+.cr-list dt {
+  font-family: var(--cond);
+  font-weight: 600;
+  font-size: 12px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--gold);
+}
+
+.cr-list dd {
+  margin-top: 0.5rem;
+  font-size: clamp(1rem, 1.6vw, 1.25rem);
+  line-height: 1.4;
+  color: var(--rice);
+}
+
+.cr-list a {
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+}
+
+.cr-list a:hover {
+  color: var(--vermilion);
+}
+
+.cr-list cite {
+  font-style: italic;
+}
+
+.loop-wave,
+[data-loop-hint] {
+  display: none;
+}
+
+html[data-film] [data-loop-hint] {
+  display: block;
+}
+
+.film-chrome {
+  display: none;
+}
+
+.film-track {
+  display: none;
+}
+
+/* ── phones ────────────────────────────────────────────────────────── */
+@media (max-width: 767px) {
+  .shot-s1 .bg {
+    object-position: 74% 50%;
+  }
+
+  .s1-ronin {
+    height: 50%;
+    left: 12%;
+    bottom: 13%;
+  }
+
+  .s1-roof {
+    width: 255%;
+    left: -112%;
+    bottom: -3%;
+  }
+
+  .s1-copy {
+    left: 5vw;
+    right: 5vw;
+    top: 9%;
+    bottom: 9%;
+    width: auto;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .s1-ink {
+    height: 27svh;
+    margin: 0.25rem 0 0;
+  }
+
+  .s1-manifesto {
+    margin-top: auto;
+    max-width: 78%;
+  }
+
+  .s1-manifesto p {
+    font-size: 1rem;
+  }
+
+  .s1-vertical {
+    top: auto;
+    bottom: 8%;
+    font-size: 1.6rem;
+  }
+
+  .s1-kana {
+    display: none;
+  }
+
+  .s1-scroll {
+    display: none;
+  }
+
+  .s2-ronin {
+    height: 30%;
+    left: -10%;
+    bottom: 0;
+  }
+
+  .culm-a {
+    left: 70%;
+    width: 7vw;
+  }
+
+  .culm-b {
+    display: none;
+  }
+
+  .s2-card {
+    left: 4vw;
+    right: 4vw;
+    top: 9%;
+    width: auto;
+    padding: 1.1rem;
+  }
+
+  .s2-kakejiku {
+    display: none;
+  }
+
+  .s3-ronin {
+    height: 40svh;
+    margin-left: calc(40svh * -0.29);
+  }
+
+  .fusuma {
+    height: 58svh;
+  }
+
+  .s4-oni {
+    height: 33%;
+    left: 0;
+  }
+
+  .s4-ronin {
+    height: 19%;
+    right: 0;
+    bottom: 3%;
+  }
+
+  .s4-scroll {
+    left: 4vw;
+    right: 4vw;
+    top: 8%;
+    width: auto;
+    margin-left: 0;
+  }
+
+  .clash {
+    top: 74%;
+    left: 52%;
+  }
+
+  .ridge {
+    top: 46%;
+  }
+
+  .s5-across {
+    right: 3vw;
+    top: 5%;
+    height: 14vh;
+  }
+
+  html[data-film] .s5-across {
+    left: 3vw;
+    right: auto;
+    top: auto;
+    bottom: calc(54% - 24px);
+    height: 17%;
+  }
+
+  .s5-card {
+    width: 74vw;
+  }
+
+  .s5-print {
+    width: 80vw;
+  }
+
+  .s6-rider {
+    left: 2vw;
+    height: 17%;
+    bottom: 3.5%;
+  }
+
+  .s6-head {
+    left: 4vw;
+    right: 4vw;
+    top: 8%;
+    width: auto;
+    padding: 1rem;
+  }
+
+  .s6-letter {
+    left: 4vw;
+    right: 4vw;
+    top: 42%;
+    width: auto;
+    height: 32svh;
+  }
+
+  .s6-socials {
+    margin-top: 0.9rem;
+  }
+}
+
+/* ══ the film (JS, motion allowed) ════════════════════════════════════ */
+html[data-film] {
+  scroll-behavior: auto;
+}
+
+html[data-film] .film {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  background: var(--ink);
+}
+
+html[data-film] .shot {
+  position: absolute;
+  inset: 0;
+  min-height: 0;
+  height: 100%;
+}
+
+html[data-film] .film-track {
+  display: block;
+}
+
+/* only the shots near the playhead are painted at all; far ones skip their images entirely */
+html[data-film] [data-near="false"] .layers,
+html[data-film] [data-near="false"] .nl,
+html[data-film] .loop-wave[data-near="false"] img {
+  display: none;
+}
+
+html[data-film] .s3-head,
+html[data-film] .s5-head {
+  position: absolute;
+  left: 4vw;
+  top: 11%;
+  padding: 0;
+}
+
+html[data-film] .s3-panels {
+  position: absolute;
+  inset: 0;
+  display: block;
+  padding: 0;
+  pointer-events: none;
+}
+
+html[data-film] .s3-panel {
+  position: absolute;
+  top: 25%;
+  width: min(40vw, 580px);
+  pointer-events: auto;
+}
+
+html[data-film] .s3-panel.is-left {
+  left: 4vw;
+}
+
+html[data-film] .s3-panel.is-right {
+  right: 4vw;
+}
+
+html[data-film] .fusuma {
+  height: 64svh;
+}
+
+html[data-film] .s4-memory {
+  display: block;
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  margin: 0;
+  opacity: 0;
+}
+
+html[data-film] .s5-track {
+  position: absolute;
+  left: 0;
+  bottom: 8%;
+  flex-wrap: nowrap;
+  padding: 0;
+  width: max-content;
+}
+
+html[data-film] .s5-card,
+html[data-film] .s5-print {
+  height: clamp(200px, 30svh, 260px);
+  min-height: 0;
+}
+
+html[data-film] .cr-roll {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  margin-left: max(-42vw, -330px);
+  padding: 0;
+}
+
+html[data-film] .loop-wave {
+  display: block;
+  position: absolute;
+  z-index: 20;
+  top: 0;
+  bottom: 0;
+  left: -20vw;
+  width: 140vw;
+  background: var(--ink);
+  clip-path: polygon(12% 0, 100% 0, 88% 100%, 0 100%);
+}
+
+html[data-film] .film-chrome {
+  display: block;
+  position: fixed;
+  inset: 0;
+  z-index: 55;
+  pointer-events: none;
+}
+
+.film-particles {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.film-blade {
+  position: absolute;
+  left: 0;
+  top: -20vh;
+  width: 3px;
+  height: 140vh;
+  background: #fff;
+  box-shadow:
+    0 0 0 2px rgb(95 168 211 / 0.35),
+    0 0 22px 4px rgb(236 230 216 / 0.45);
+  opacity: 0;
+  visibility: hidden;
+}
+
+.film-flash {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+}
+
+.film-flash.on {
+  animation: film-flash 90ms steps(1, end);
+}
+
+@keyframes film-flash {
+  0% {
+    opacity: 0.9;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+.letterbox {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 2.8vh;
+  background: #03070d;
+}
+
+.letterbox-top {
+  top: 0;
+}
+
+.letterbox-bottom {
+  bottom: 0;
+}
+
+.film-counter {
+  position: absolute;
+  right: 1.25rem;
+  bottom: calc(2.8vh + 0.7rem);
+  display: flex;
+  align-items: center;
+  color: var(--rice);
+  font-size: 11px;
+  mix-blend-mode: difference;
+}
+
+@media (max-width: 767px) {
+  html[data-film] .s3-panel,
+  html[data-film] .s3-panel.is-left,
+  html[data-film] .s3-panel.is-right {
+    left: 4vw;
+    right: 4vw;
+    top: 21%;
+    width: auto;
+  }
+
+  html[data-film] .fusuma {
+    height: 54svh;
+  }
+
+  html[data-film] .s5-track {
+    bottom: 9%;
+  }
+
+  html[data-film] .cr-roll {
+    margin-left: -42vw;
+  }
+
+  .film-counter-t {
+    display: none;
+  }
+}
+
+/* ══ motion: time-based, only while the film plays, frozen on shots that aren't live ══ */
+html[data-film] .shot:not([data-live="true"]) * {
+  animation-play-state: paused !important;
+}
+
+/* the camera never stops: each shot's layer stack drifts with its own move */
+html[data-film] .shot-s1 .layers {
+  animation: cam-push 15s ease-in-out infinite alternate;
+}
+
+html[data-film] .shot-s2 .layers {
+  animation: cam-pan 24s ease-in-out infinite alternate;
+}
+
+html[data-film] .shot-s3 .layers {
+  animation: cam-sway 7s ease-in-out infinite alternate;
+}
+
+html[data-film] .shot-s4 .layers {
+  animation: cam-handheld 2.7s ease-in-out infinite;
+}
+
+html[data-film] .shot-s5 .layers {
+  animation: cam-sway 5s ease-in-out infinite alternate;
+}
+
+html[data-film] .shot-s6 .layers {
+  animation: cam-track 0.44s ease-in-out infinite alternate;
+}
+
+@keyframes cam-push {
+  from {
+    scale: 1.01;
+    translate: 0 0;
+  }
+  to {
+    scale: 1.06;
+    translate: -1vw 0.8vh;
+  }
+}
+
+@keyframes cam-pan {
+  from {
+    scale: 1.05;
+    translate: 1.6vw 0;
+  }
+  to {
+    scale: 1.05;
+    translate: -1.6vw -0.4vh;
+  }
+}
+
+@keyframes cam-sway {
+  from {
+    scale: 1.03;
+    translate: -0.5vw 0.2vh;
+    rotate: -0.2deg;
+  }
+  to {
+    scale: 1.03;
+    translate: 0.5vw -0.2vh;
+    rotate: 0.2deg;
+  }
+}
+
+@keyframes cam-handheld {
+  0%,
+  100% {
+    scale: 1.025;
+    translate: 0 0;
+    rotate: 0deg;
+  }
+  25% {
+    translate: 0.3vw -0.25vh;
+    rotate: 0.18deg;
+  }
+  50% {
+    translate: -0.25vw 0.3vh;
+    rotate: -0.12deg;
+  }
+  75% {
+    translate: 0.2vw 0.12vh;
+    rotate: 0.08deg;
+  }
+}
+
+@keyframes cam-track {
+  from {
+    scale: 1.015;
+    translate: 0 -0.25vh;
+  }
+  to {
+    scale: 1.015;
+    translate: 0 0.25vh;
+  }
+}
+
+/* gold-leaf cloud bands drift across the sky */
+html[data-film] .gold-cloud {
+  animation: cloud-drift 80s linear infinite;
+}
+
+html[data-film] .gold-cloud-1 {
+  animation-duration: 110s;
+  animation-delay: -64s;
+}
+
+@keyframes cloud-drift {
+  from {
+    translate: 105vw 0;
+  }
+  to {
+    translate: -40vw 0;
+  }
+}
+
+/* 2 · the culms sway from their roots */
+html[data-film] .culm {
+  transform-origin: 50% 100%;
+  animation: culm-sway 4.6s ease-in-out infinite alternate;
+}
+
+html[data-film] .culm-b {
+  animation-duration: 3.7s;
+  animation-delay: -1.2s;
+}
+
+@keyframes culm-sway {
+  from {
+    rotate: -1.1deg;
+  }
+  to {
+    rotate: 0.9deg;
+  }
+}
+
+/* 3 · the dolly: two copies of the hall zoom toward the vanishing point and dissolve into each other */
+.dolly {
+  overflow: hidden;
+}
+
+.dolly img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 50% 55%;
+  transform-origin: 50% 47%;
+}
+
+.dolly-b {
+  display: none;
+}
+
+html[data-film] .dolly-b {
+  display: block;
+}
+
+html[data-film] .dolly img {
+  animation: dolly 12s linear infinite;
+}
+
+html[data-film] .dolly-b {
+  animation-delay: -6s !important;
+}
+
+@keyframes dolly {
+  0% {
+    scale: 1;
+    opacity: 0;
+  }
+  18% {
+    opacity: 1;
+  }
+  82% {
+    opacity: 1;
+  }
+  100% {
+    scale: 1.5;
+    opacity: 0;
+  }
+}
+
+/* 4 · impact frames: a white star and a camera jolt every time the cut lands */
+.impact.hit {
+  animation: impact 280ms steps(4, end) !important;
+  animation-play-state: running !important;
+}
+
+@keyframes impact {
+  0% {
+    opacity: 1;
+    scale: 0.5;
+  }
+  35% {
+    opacity: 0.95;
+    scale: 1.15;
+  }
+  100% {
+    opacity: 0;
+    scale: 1.5;
+  }
+}
+
+.shot-s4 .bg.hit {
+  animation: jolt 260ms steps(5, end) !important;
+  animation-play-state: running !important;
+}
+
+@keyframes jolt {
+  0% {
+    translate: 0.9vw -0.6vh;
+  }
+  25% {
+    translate: -0.7vw 0.5vh;
+  }
+  50% {
+    translate: 0.4vw 0.3vh;
+  }
+  75% {
+    translate: -0.2vw -0.2vh;
+  }
+  100% {
+    translate: 0 0;
+  }
+}
+
+/* 5 · the run: the ridge rushes under him, he gains and loses ground on the camera, and leaps */
+html[data-film] .ridge-run {
+  animation: ridge-run 0.62s linear infinite;
+}
+
+@keyframes ridge-run {
+  to {
+    transform: translateX(-240px);
+  }
+}
+
+html[data-film] .s5-across {
+  animation: run-across 6.5s ease-in-out infinite alternate;
+}
+
+@keyframes run-across {
+  from {
+    translate: 0 0;
+  }
+  to {
+    translate: 34vw 0;
+  }
+}
+
+html[data-film] .s5-leap {
+  animation: leap 2.8s cubic-bezier(0.3, 0, 0.6, 1) infinite;
+}
+
+@keyframes leap {
+  0%,
+  50% {
+    translate: 0 0;
+    rotate: 0deg;
+  }
+  58% {
+    translate: 0 -9vh;
+    rotate: -6deg;
+  }
+  68% {
+    translate: 0 -14vh;
+    rotate: -2deg;
+  }
+  79% {
+    translate: 0 -5vh;
+    rotate: 4deg;
+  }
+  86% {
+    translate: 0 0.6vh;
+    rotate: 1deg;
+  }
+  92%,
+  100% {
+    translate: 0 0;
+    rotate: 0deg;
+  }
+}
+
+/* speed lines streak past behind fast subjects */
+html[data-film] .speedlines {
+  display: block;
+}
+
+html[data-film] .speed-run {
+  animation: speed-run 0.24s linear infinite;
+}
+
+@keyframes speed-run {
+  to {
+    transform: translateX(-640px);
+  }
+}
+
+.speed-s5 {
+  inset: 8% 60% 6% -90%;
+  opacity: 0.55;
+  mask-image: linear-gradient(to right, transparent, #000 70%, transparent);
+}
+
+.speed-s6 {
+  inset: 38% 0 6% 0;
+  opacity: 0.32;
+  mask-image: linear-gradient(to bottom, transparent, #000 30%, #000 70%, transparent);
+}
+
+/* 6 · the grove rushes past the galloping horse; the rider gains and drops back a little */
+html[data-film] .culm-rush-far .culm-run {
+  animation: culm-far 1.25s linear infinite;
+}
+
+html[data-film] .culm-rush-near .culm-run {
+  animation: culm-near 1.05s linear infinite;
+}
+
+@keyframes culm-far {
+  to {
+    transform: translateX(-300px);
+  }
+}
+
+@keyframes culm-near {
+  to {
+    transform: translateX(-1400px);
+  }
+}
+
+html[data-film] .s6-bob {
+  animation: ride-drift 5.5s ease-in-out infinite alternate;
+}
+
+@keyframes ride-drift {
+  from {
+    translate: -1.5vw 0;
+  }
+  to {
+    translate: 3vw 0;
+  }
+}
+
+/* film grain flickers like a projected print */
+html[data-film] .grain {
+  inset: -60px;
+  animation: grain 0.9s steps(6) infinite;
+}
+
+@keyframes grain {
+  0% {
+    transform: translate(0, 0);
+  }
+  20% {
+    transform: translate(-28px, 14px);
+  }
+  40% {
+    transform: translate(18px, -24px);
+  }
+  60% {
+    transform: translate(-12px, 30px);
+  }
+  80% {
+    transform: translate(32px, 8px);
+  }
+  100% {
+    transform: translate(-6px, -18px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .breathe,
+  .mist {
+    animation: none;
+  }
+
+  .speedlines {
+    display: none;
+  }
+}
