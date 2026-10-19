@@ -18,7 +18,7 @@ cd hybrid && npm install && npm run dev
 
 Copy for all lives in `src/content.ts`. Screenshots: `npm run shots` (dev server must be running).
 
-> `video/` uses footage from a Tokyo Ghoul fan edit by @pzxepitsu (TikTok); `crt/` uses one by @.maisamu (TikTok); `hybrid/` uses both. Local demo only — do not publish without permission.
+> `video/` uses footage from a Tokyo Ghoul fan edit by @pzxepitsu (TikTok); `crt/` uses one by @.maisamu (TikTok); `hybrid/` uses both. That footage, its frames and its audio are not in this repo; see each variant's `public/media/README.md` to build frames from your own clip.
 
 ## Deploy
 

@@ -1,0 +1,14 @@
+node_modules/
+.next/
+dist/
+out/
+.cache/
+.vercel/
+.env*
+!.env.example
+*.tsbuildinfo
+test-results/
+shots/
+screenshots/
+.claude/
+.DS_Store
